@@ -1,0 +1,4 @@
+build/
+doc/html
+*.pgm
+*.ppm
