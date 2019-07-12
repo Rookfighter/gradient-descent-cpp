@@ -6,7 +6,7 @@
  */
 
 #include "assert/eigen_require.h"
-#include <gdc/gradient_descent.h>
+#include <gradient_descent_cpp.h>
 
 using namespace gdc;
 
