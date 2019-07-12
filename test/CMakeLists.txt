@@ -6,6 +6,8 @@ include_directories(
 
 set(TEST_SRC
     "main.cpp"
+
+    "gradient_descent.cpp"
 )
 
 add_executable(run_tests ${TEST_SRC})
