@@ -33,12 +33,12 @@ TEST_CASE("gradient_descent")
 
     SECTION("optimize paraboloid")
     {
-        Vector state(2);
-        state << 2, 2;
-        Vector stateExp(2);
-        stateExp << 0, 0;
+        Vector xval(2);
+        xval << 2, 2;
+        Vector xvalExp(2);
+        xvalExp << 0, 0;
 
-        auto result = optimizer.minimize(state);
-        REQUIRE_MATRIX_APPROX(stateExp, result.state, eps);
+        auto result = optimizer.minimize(xval);
+        REQUIRE_MATRIX_APPROX(xvalExp, result.xval, eps);
     }
 }
