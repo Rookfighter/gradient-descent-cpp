@@ -1,8 +1,8 @@
-/*
- * gdcpp.h
+/* gdcpp.h
  *
- * Author: Fabian Meyer
+ *     Author: Fabian Meyer
  * Created On: 12 Jul 2019
+ *    License: MIT
  */
 
 #ifndef GDCPP_GDCPP_H_

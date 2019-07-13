@@ -1,7 +1,6 @@
-/*
- * gdcpp.cpp
+/* gdcpp.cpp
  *
- * Author: Fabian Meyer
+ *     Author: Fabian Meyer
  * Created On: 12 Jul 2019
  */
 
