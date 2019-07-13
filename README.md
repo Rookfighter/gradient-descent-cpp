@@ -2,8 +2,8 @@
 
 ![Cpp11](https://img.shields.io/badge/C%2B%2B-11-blue.svg)
 ![License](https://img.shields.io/packagist/l/doctrine/orm.svg)
-![Travis Status](https://travis-ci.org/Rookfighter/kdtree-eigen.svg?branch=master)
-![Appveyor Status](https://ci.appveyor.com/api/projects/status/r52757j9k4uybfu6?svg=true)
+![Travis Status](https://travis-ci.org/Rookfighter/gradient-descent-cpp.svg?branch=master)
+![Appveyor Status](https://ci.appveyor.com/api/projects/status/66uh2rua4sijj4y9?svg=true)
 
 gradient-descent-cpp is a header-only C++ library for gradient descent
 optimization using the Eigen3 library.
