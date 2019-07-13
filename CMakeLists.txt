@@ -4,7 +4,7 @@
 # Created On: 12 Jul 2019
 
 cmake_minimum_required(VERSION 3.5)
-project(gradient-descent-cpp)
+project(gdcpp)
 
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
