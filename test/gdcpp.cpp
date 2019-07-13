@@ -1,12 +1,12 @@
 /*
- * gradient_descent.cpp
+ * gdcpp.cpp
  *
  * Author: Fabian Meyer
  * Created On: 12 Jul 2019
  */
 
 #include "assert/eigen_require.h"
-#include <gradient_descent_cpp.h>
+#include <gdcpp.h>
 
 using namespace gdc;
 

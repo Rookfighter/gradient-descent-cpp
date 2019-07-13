@@ -1,12 +1,12 @@
 /*
- * gradient_descent_cpp.h
+ * gdcpp.h
  *
  * Author: Fabian Meyer
  * Created On: 12 Jul 2019
  */
 
-#ifndef GRADIENT_DESCENT_CPP_H_
-#define GRADIENT_DESCENT_CPP_H_
+#ifndef GDCPP_GDCPP_H_
+#define GDCPP_GDCPP_H_
 
 #include <Eigen/Geometry>
 #include <limits>
