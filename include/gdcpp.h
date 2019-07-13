@@ -269,7 +269,7 @@ namespace gdc
 
         void setMinimumGradientLength(const Scalar gradientLen)
         {
-            minGradientLen_ = minGradientLen_;
+            minGradientLen_ = gradientLen;
         }
 
         void setLearningRate(const Scalar learningRate)

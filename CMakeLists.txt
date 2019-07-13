@@ -29,11 +29,14 @@ include_directories(
     ${EIGEN3_INCLUDE_DIR}
 )
 
-install(DIRECTORY "include/gdc"
+install(FILES "include/gdcpp.h"
     DESTINATION include)
-
 
 if(${BUILD_TESTS})
     # Compile tests
     add_subdirectory(test)
 endif(${BUILD_TESTS})
+
+if(${BUILD_EXAMPLES})
+    add_subdirectory(examples)
+endif(${BUILD_EXAMPLES})
