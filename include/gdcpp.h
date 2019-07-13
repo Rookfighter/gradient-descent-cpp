@@ -246,7 +246,7 @@ namespace gdc
 
         }
 
-        void setMaximumIterations(const Index iterations)
+        void setMaxIterations(const Index iterations)
         {
             maxIt_ = iterations;
         }
@@ -267,7 +267,7 @@ namespace gdc
             finiteDifferences_.eps = eps;
         }
 
-        void setMinimumGradientLength(const Scalar gradientLen)
+        void setMinGradientLength(const Scalar gradientLen)
         {
             minGradientLen_ = gradientLen;
         }

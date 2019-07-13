@@ -27,19 +27,19 @@ int main()
 
     // Set number of iterations as stop criterion.
     // Set it to 0 or negative for infinite iterations (default is 0).
-    optimizer.setMaximumIterations(100);
+    optimizer.setMaxIterations(100);
 
     // Set the minimum length of the gradient.
     // The optimizer stops minimizing if the gradient length falls below this
     // value (default is 1e-6).
-    optimizer.setMinimumGradientLength(1e-3);
+    optimizer.setMinGradientLength(1e-3f);
 
     // Set the learning rate used for the step calculation (default is 0.7).
-    optimizer.setLearningRate(0.8);
+    optimizer.setLearningRate(0.8f);
 
     // Set the momentum rate used for the step calculation (default is 0.9).
     // Defines how much momentum is kept from previous iterations.
-    optimizer.setMomentumRate(0.8);
+    optimizer.setMomentumRate(0.8f);
 
     // Turn verbosity on, so the optimizer prints status updates after each
     // iteration.
