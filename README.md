@@ -44,7 +44,7 @@ There are three steps to use gradient-descent-cpp:
 // Implement an objective functor.
 struct Paraboloid
 {
-    float operator()(const Eigen::VectorXf &xval, Eigen::VectorXf &gradient) const
+    float operator()(const Eigen::VectorXd &xval, Eigen::VectorXd &gradient) const
     {
         // compute gradient explicitly
         // if gradient calculation is omitted, then the optimizer uses
@@ -64,7 +64,7 @@ int main()
     // You can additionally specify a FiniteDifferences functor as template
     // parameter. Default is CentralDifferences. Forward- and BackwardDifferences
     // are also available.
-    gdc::GradientDescent<float, Paraboloid> optimizer;
+    gdc::GradientDescent<double, Paraboloid> optimizer;
 
     // Set number of iterations as stop criterion.
     // Set it to 0 or negative for infinite iterations (default is 0).
@@ -73,21 +73,21 @@ int main()
     // Set the minimum length of the gradient.
     // The optimizer stops minimizing if the gradient length falls below this
     // value (default is 1e-6).
-    optimizer.setMinGradientLength(1e-3f);
+    optimizer.setMinGradientLength(1e-3);
 
     // Set the learning rate used for the step calculation (default is 0.7).
-    optimizer.setLearningRate(0.8f);
+    optimizer.setLearningRate(0.8);
 
     // Set the momentum rate used for the step calculation (default is 0.9).
     // Defines how much momentum is kept from previous iterations.
-    optimizer.setMomentumRate(0.8f);
+    optimizer.setMomentumRate(0.8);
 
     // Turn verbosity on, so the optimizer prints status updates after each
     // iteration.
     optimizer.setVerbose(true);
 
     // set initial guess
-    Eigen::VectorXf initialGuess(2);
+    Eigen::VectorXd initialGuess(2);
     initialGuess << 2, 2;
 
     // start the optimization
