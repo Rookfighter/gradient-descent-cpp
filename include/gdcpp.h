@@ -208,7 +208,7 @@ namespace gdc
         Index maxIt_;
         Scalar minGradientLen_;
         Scalar learningRate_;
-        Scalar momentumRate_;
+        Scalar momentum_;
         bool verbose_;
         Objective objective_;
         Callback callback_;
@@ -247,7 +247,7 @@ namespace gdc
         GradientDescent()
             : maxIt_(0), minGradientLen_(static_cast<Scalar>(1e-6)),
             learningRate_(static_cast<Scalar>(0.7)),
-            momentumRate_(static_cast<Scalar>(0.9)),
+            momentum_(static_cast<Scalar>(0.9)),
             verbose_(false), objective_(), callback_(), finiteDifferences_()
         {
 
@@ -294,9 +294,9 @@ namespace gdc
             learningRate_ = learningRate;
         }
 
-        void setMomentumRate(const Scalar momentumRate)
+        void setMomentum(const Scalar momentum)
         {
-            momentumRate_ = momentumRate;
+            momentum_ = momentum;
         }
 
         void setVerbose(const bool verbose)
@@ -319,7 +319,7 @@ namespace gdc
                 xval -= step;
                 fval = evaluateObjective(xval, gradient);
                 gradientLen = gradient.norm();
-                step = momentumRate_ * step + learningRate_ * gradient;
+                step = momentum_ * step + (1 - momentum_) * learningRate_ * gradient;
 
                 if(verbose_)
                 {

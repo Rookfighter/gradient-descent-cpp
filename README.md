@@ -80,7 +80,7 @@ int main()
 
     // Set the momentum rate used for the step calculation (default is 0.9).
     // Defines how much momentum is kept from previous iterations.
-    optimizer.setMomentumRate(0.8);
+    optimizer.setMomentum(0.8);
 
     // Turn verbosity on, so the optimizer prints status updates after each
     // iteration.
