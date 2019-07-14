@@ -13,7 +13,7 @@ template<typename Scalar>
 struct Paraboloid
 {
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-    Scalar operator()(const Vector &state, Vector &gradient) const
+    Scalar operator()(const Vector &state, Vector &gradient)
     {
         gradient.resize(2);
         gradient(0) = 2 * state(0);

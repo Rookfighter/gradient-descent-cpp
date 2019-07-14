@@ -3,7 +3,7 @@
 // Implement an objective functor.
 struct Paraboloid
 {
-    float operator()(const Eigen::VectorXd &xval, Eigen::VectorXd &gradient) const
+    double operator()(const Eigen::VectorXd &xval, Eigen::VectorXd &gradient)
     {
         // compute gradient explicitly
         // if gradient calculation is omitted, then the optimizer uses

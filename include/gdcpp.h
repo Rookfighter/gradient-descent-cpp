@@ -50,7 +50,7 @@ namespace gdc
 
         void operator()(const Vector &xval,
             const Scalar fval,
-            Vector &gradient) const
+            Vector &gradient)
         {
             Vector gradTmp;
 
@@ -100,7 +100,7 @@ namespace gdc
 
         void operator()(const Vector &xval,
             const Scalar fval,
-            Vector &gradient) const
+            Vector &gradient)
         {
             Vector gradTmp;
 
@@ -150,7 +150,7 @@ namespace gdc
 
         void operator()(const Vector &xval,
             const Scalar,
-            Vector &gradient) const
+            Vector &gradient)
         {
             Vector gradTmp;
 
@@ -214,7 +214,7 @@ namespace gdc
         Callback callback_;
         FiniteDifferences finiteDifferences_;
 
-        Scalar evaluateObjective(const Vector &xval, Vector &gradient) const
+        Scalar evaluateObjective(const Vector &xval, Vector &gradient)
         {
             gradient.resize(0);
             Scalar fval = objective_(xval, gradient);
@@ -253,7 +253,7 @@ namespace gdc
 
         }
 
-        virtual ~GradientDescent()
+        ~GradientDescent()
         {
 
         }
@@ -304,7 +304,7 @@ namespace gdc
             verbose_ = verbose;
         }
 
-        virtual Result minimize(const Vector &initialGuess)
+        Result minimize(const Vector &initialGuess)
         {
             Vector gradient;
             Vector xval = initialGuess;
