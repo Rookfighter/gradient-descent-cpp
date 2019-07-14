@@ -234,9 +234,10 @@ namespace gdc
     public:
 
         GradientDescent()
-            : maxIt_(0), minGradientLen_(1e-6), learningRate_(0.7),
-            momentumRate_(0.9), verbose_(false), objective_(), callback_(),
-            finiteDifferences_()
+            : maxIt_(0), minGradientLen_(static_cast<Scalar>(1e-6)),
+            learningRate_(static_cast<Scalar>(0.7)),
+            momentumRate_(static_cast<Scalar>(0.9)),
+            verbose_(false), objective_(), callback_(), finiteDifferences_()
         {
 
         }
