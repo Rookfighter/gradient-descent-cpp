@@ -319,7 +319,8 @@ namespace gdc
                 xval -= step;
                 fval = evaluateObjective(xval, gradient);
                 gradientLen = gradient.norm();
-                step = momentum_ * step + (1 - momentum_) * learningRate_ * gradient;
+                // update step according to learnung size and momentum
+                step = learningRate_ * (momentum_ * step + (1 - momentum_) * gradient);
 
                 if(verbose_)
                 {
