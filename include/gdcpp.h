@@ -304,7 +304,7 @@ namespace gdc
             verbose_ = verbose;
         }
 
-        virtual Result minimize(const Vector &initialGuess) const
+        virtual Result minimize(const Vector &initialGuess)
         {
             Vector gradient;
             Vector xval = initialGuess;
