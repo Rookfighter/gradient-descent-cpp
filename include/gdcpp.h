@@ -32,10 +32,12 @@ namespace gdc
 
         Objective objective;
         Scalar eps;
+        Index threads;
 
         ForwardDifferences()
             : objective(),
-            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon()))
+            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon())),
+            threads(0)
         {
 
         }
@@ -50,15 +52,15 @@ namespace gdc
             const Scalar fval,
             Vector &gradient) const
         {
-            Vector tmp;
-            Vector nxval = xval;
+            Vector gradTmp;
 
             gradient.resize(xval.size());
+            #pragma omp parallel for num_threads(threads)
             for(Index i = 0; i < xval.size(); ++i)
             {
-                nxval(i) += eps;
-                Scalar fvalNew = objective(nxval, tmp);
-                nxval(i) = xval(i);
+                Vector xvalTmp = xval;
+                xvalTmp(i) += eps;
+                Scalar fvalNew = objective(xvalTmp, gradTmp);
 
                 gradient(i) = (fvalNew - fval) / eps;
             }
@@ -80,10 +82,12 @@ namespace gdc
 
         Objective objective;
         Scalar eps;
+        Index threads;
 
         BackwardDifferences()
             : objective(),
-            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon()))
+            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon())),
+            threads(0)
         {
 
         }
@@ -98,15 +102,15 @@ namespace gdc
             const Scalar fval,
             Vector &gradient) const
         {
-            Vector nxval = xval;
-            Vector tmp;
+            Vector gradTmp;
 
             gradient.resize(xval.size());
+            #pragma omp parallel for num_threads(threads)
             for(Index i = 0; i < xval.size(); ++i)
             {
-                nxval(i) -= eps;
-                Scalar fvalNew = objective(nxval, tmp);
-                nxval(i) = xval(i);
+                Vector xvalTmp = xval;
+                xvalTmp(i) -= eps;
+                Scalar fvalNew = objective(xvalTmp, gradTmp);
 
                 gradient(i) = (fval - fvalNew) / eps;
             }
@@ -128,9 +132,12 @@ namespace gdc
 
         Objective objective;
         Scalar eps;
+        Index threads;
 
         CentralDifferences()
-            : objective(), eps(std::sqrt(std::numeric_limits<Scalar>::epsilon()))
+            : objective(),
+            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon())),
+            threads(0)
         {
 
         }
@@ -145,20 +152,24 @@ namespace gdc
             const Scalar,
             Vector &gradient) const
         {
-            Vector nxval = xval;
-            Vector tmp;
+            Vector gradTmp;
+
+            Vector fvals(xval.size() * 2);
+            #pragma omp parallel for num_threads(threads)
+            for(Index i = 0; i < fvals.size(); ++i)
+            {
+                Index idx = i / 2;
+                Vector xvalTmp = xval;
+                if(i % 2 == 0)
+                    xvalTmp(idx) += eps / 2;
+                else
+                    xvalTmp(idx) -= eps / 2;
+                fvals(i) = objective(xvalTmp, gradTmp);
+            }
 
             gradient.resize(xval.size());
             for(Index i = 0; i < xval.size(); ++i)
-            {
-                nxval(i) = xval(i) + eps / 2;
-                Scalar fvalA = objective(nxval, tmp);
-                nxval(i) = xval(i) - eps / 2;
-                Scalar fvalB = objective(nxval, tmp);
-                nxval(i) = xval(i);
-
-                gradient(i) = (fvalA - fvalB) / eps;
-            }
+                gradient(i) = (fvals(i * 2) - fvals(i * 2 + 1)) / eps;
         }
     };
 
@@ -245,6 +256,11 @@ namespace gdc
         virtual ~GradientDescent()
         {
 
+        }
+
+        void setThreads(const Index threads)
+        {
+            finiteDifferences_.threads = threads;
         }
 
         void setMaxIterations(const Index iterations)
