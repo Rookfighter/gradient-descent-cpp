@@ -19,10 +19,16 @@ struct Paraboloid
 int main()
 {
     // Create optimizer object with Paraboloid functor as objective.
+    //
+    // You can specify a StepSize functor as template parameter.
+    // There are ConstantStepSize, BarzilaiBorweinStep and WolfeLineSearch
+    // available. (Default is WolfeLineSearch)
+    //
     // You can additionally specify a Callback functor as template parameter.
+    //
     // You can additionally specify a FiniteDifferences functor as template
-    // parameter. Default is CentralDifferences. Forward- and BackwardDifferences
-    // are also available.
+    // parameter. There are Forward-, Backward- and CentralDifferences
+    // available. (Default is CentralDifferences)
     gdc::GradientDescent<double, Paraboloid,
         gdc::ConstantStepSize<double, Paraboloid>> optimizer;
 
@@ -35,7 +41,7 @@ int main()
     // value (default is 1e-6).
     optimizer.setMinGradientLength(1e-3);
 
-    // Set the learning rate used for the step calculation (default is 0.7).
+    // Set the the parametrized StepSize functor used for the step calculation.
     optimizer.setStepSize(gdc::ConstantStepSize<double, Paraboloid>(0.8));
 
     // Set the momentum rate used for the step calculation (default is 0.9).
@@ -46,11 +52,11 @@ int main()
     // iteration.
     optimizer.setVerbose(true);
 
-    // set initial guess
+    // Set initial guess.
     Eigen::VectorXd initialGuess(2);
     initialGuess << 2, 2;
 
-    // start the optimization
+    // Start the optimization
     auto result = optimizer.minimize(initialGuess);
 
     std::cout << "Done! Converged: " << (result.converged ? "true" : "false")
@@ -59,7 +65,7 @@ int main()
     // do something with final function value
     std::cout << "Final fval: " << result.fval << std::endl;
 
-    // do something with final function value
+    // do something with final x-value
     std::cout << "Final xval: " << result.xval.transpose() << std::endl;
 
     return 0;
