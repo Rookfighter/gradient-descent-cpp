@@ -267,15 +267,29 @@ namespace gdc
     {
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
 
+        Scalar decrease;
         Scalar c1;
         Scalar c2;
         Objective *objective;
         FiniteDifferences finiteDifferences;
 
         WolfeLineSearch()
-            : c1(1e-4), c2(0.9), objective(nullptr)
+            : WolfeLineSearch(0.9, 1e-4, 0.9)
         {
 
+        }
+
+        WolfeLineSearch(const Scalar decrease)
+            : WolfeLineSearch(decrease, 1e-4, 0.9)
+        {
+
+        }
+
+        WolfeLineSearch(const Scalar decrease, const Scalar c1, const Scalar c2)
+            : decrease(decrease), c1(c1), c2(c2), objective(nullptr),
+            finiteDifferences()
+        {
+            finiteDifferences.threads = 0;
         }
 
         Scalar evaluateObjective(const Vector &xval, Vector &gradient)
@@ -305,7 +319,7 @@ namespace gdc
             while(fvalTmp > fval + c1 * stepSize * gradientStep
                 || (-gradient.transpose() * gradientTmp)(0) > -c2 * gradientStep)
             {
-                stepSize = stepSize * 0.9;
+                stepSize = decrease * stepSize;
                 xvalTmp = xval + stepSize * -gradient;
                 fvalTmp = evaluateObjective(xvalTmp, gradientTmp);
             }
@@ -466,7 +480,8 @@ namespace gdc
 
                 if(verbose_)
                 {
-                    std::cout << "it=" << std::setfill('0')
+                    std::stringstream ss;
+                    ss << "it=" << std::setfill('0')
                         << std::setw(4) << iterations
                         << std::fixed << std::showpoint << std::setprecision(6)
                         << "    gradlen=" << gradientLen
@@ -477,6 +492,7 @@ namespace gdc
                         << "    gradient=" << vector2str(gradient)
                         << "    step=" << vector2str(step)
                         << std::endl;
+                    std::cout << ss.str();
                 }
 
                 if(!callback_(iterations, xval, fval, gradient))
