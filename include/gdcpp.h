@@ -223,6 +223,34 @@ namespace gdc
     };
 
     template<typename Scalar, typename Objective>
+    struct LimitedChangeStep
+    {
+        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+
+        Scalar changeLimit;
+        Objective *objective;
+
+        LimitedChangeStep()
+            : LimitedChangeStep(0.1)
+        {
+
+        }
+
+        LimitedChangeStep(const Scalar changeLimit)
+            : changeLimit(changeLimit), objective(nullptr)
+        {
+
+        }
+
+        Scalar operator()(const Vector &,
+            const Scalar,
+            const Vector &gradient)
+        {
+            return 1 / gradient.array().abs().maxCoeff();
+        }
+    };
+
+    template<typename Scalar, typename Objective>
     struct BarzilaiBorweinStep
     {
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
@@ -330,7 +358,7 @@ namespace gdc
 
     template<typename Scalar,
         typename Objective,
-        typename StepSize=WolfeLineSearch<Scalar, Objective>,
+        typename StepSize=BarzilaiBorweinStep<Scalar, Objective>,
         typename Callback=NoCallback<Scalar>,
         typename FiniteDifferences=CentralDifferences<Scalar, Objective> >
     class GradientDescent
@@ -388,8 +416,7 @@ namespace gdc
 
         GradientDescent()
             : maxIt_(0), minGradientLen_(static_cast<Scalar>(1e-9)),
-            minStepLen_(static_cast<Scalar>(1e-9)),
-            momentum_(static_cast<Scalar>(0.9)),
+            minStepLen_(static_cast<Scalar>(1e-9)), momentum_(0),
             verbose_(false), objective_(), stepSize_(), callback_(),
             finiteDifferences_()
         {
@@ -475,7 +502,7 @@ namespace gdc
                 gradientLen = gradient.norm();
                 // update step according to step size and momentum
                 stepSize = stepSize_(xval, fval, gradient);
-                step = stepSize * (momentum_ * step + (1 - momentum_) * gradient);
+                step = momentum_ * step + (1 - momentum_) * stepSize * gradient;
                 stepLen = step.norm();
 
                 if(verbose_)
