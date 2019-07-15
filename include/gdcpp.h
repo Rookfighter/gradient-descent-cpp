@@ -194,6 +194,7 @@ namespace gdc
         }
     };
 
+    /** Functor that returns a constant step size for gradient descent. */
     template<typename Scalar, typename Objective>
     struct ConstantStepSize
     {
@@ -222,6 +223,11 @@ namespace gdc
         }
     };
 
+    /** Functor to compute the gradient descent step size according to the
+      * barzilai-borwein-method.
+      *
+      * stepSize = abs((x - x_last)^T * (grad - grad_last)) / norm(grad - grad_last)^2
+      */
     template<typename Scalar, typename Objective>
     struct BarzilaiBorweinStep
     {
@@ -260,6 +266,15 @@ namespace gdc
         }
     };
 
+    /** Functor to compute the gradient descent step size by Wolfe line search
+      * in backtracking mode.
+      * In principle, the step size is initialized to 1 and reduced until the
+      * Arimijo and Wolfe condition are satisfied.
+      *
+      *         x_n = x + stepSize * -grad(x)
+      * Armijo: f(x_n) <= f(x) + c1 * stepSize * -grad(x)^T * grad(x)
+      * Wolfe:  -grad(x)^T * grad(x_n) <= -c2 * -grad(x)^T * grad(x)
+      */
     template<typename Scalar,
         typename Objective,
         typename FiniteDifferences=CentralDifferences<Scalar, Objective>>
