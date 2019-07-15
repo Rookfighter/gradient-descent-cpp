@@ -532,7 +532,8 @@ namespace gdc
             result.xval = xval;
             result.fval = fval;
             result.iterations = iterations;
-            result.converged = gradientLen < minGradientLen_;
+            result.converged = gradientLen < minGradientLen_ ||
+                stepLen < minStepLen_;
 
             return result;
         }
