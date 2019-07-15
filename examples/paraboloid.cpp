@@ -38,8 +38,13 @@ int main()
 
     // Set the minimum length of the gradient.
     // The optimizer stops minimizing if the gradient length falls below this
-    // value (default is 1e-6).
-    optimizer.setMinGradientLength(1e-3);
+    // value (default is 1e-9).
+    optimizer.setMinGradientLength(1e-6);
+
+    // Set the minimum length of the step.
+    // The optimizer stops minimizing if the step length falls below this
+    // value (default is 1e-9).
+    optimizer.setMinStepLength(1e-6);
 
     // Set the the parametrized StepSize functor used for the step calculation.
     optimizer.setStepSize(gdc::ConstantStepSize<double, Paraboloid>(0.8));
