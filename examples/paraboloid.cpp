@@ -23,7 +23,8 @@ int main()
     // You can additionally specify a FiniteDifferences functor as template
     // parameter. Default is CentralDifferences. Forward- and BackwardDifferences
     // are also available.
-    gdc::GradientDescent<double, Paraboloid> optimizer;
+    gdc::GradientDescent<double, Paraboloid,
+        gdc::ConstantStepSize<double, Paraboloid>> optimizer;
 
     // Set number of iterations as stop criterion.
     // Set it to 0 or negative for infinite iterations (default is 0).
@@ -35,7 +36,7 @@ int main()
     optimizer.setMinGradientLength(1e-3);
 
     // Set the learning rate used for the step calculation (default is 0.7).
-    optimizer.setLearningRate(0.8);
+    optimizer.setStepSize(gdc::ConstantStepSize<double, Paraboloid>(0.8));
 
     // Set the momentum rate used for the step calculation (default is 0.9).
     // Defines how much momentum is kept from previous iterations.

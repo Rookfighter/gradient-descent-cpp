@@ -30,20 +30,19 @@ namespace gdc
     {
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
 
-        Objective objective;
         Scalar eps;
         Index threads;
+        Objective *objective;
 
         ForwardDifferences()
-            : objective(),
-            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon())),
-            threads(0)
+            : ForwardDifferences(
+                std::sqrt(std::numeric_limits<Scalar>::epsilon()))
         {
 
         }
 
         ForwardDifferences(const Scalar eps)
-            : objective(), eps(eps)
+            : eps(eps), threads(0), objective(nullptr)
         {
 
         }
@@ -52,6 +51,8 @@ namespace gdc
             const Scalar fval,
             Vector &gradient)
         {
+            assert(objective != nullptr);
+
             Vector gradTmp;
 
             gradient.resize(xval.size());
@@ -60,7 +61,7 @@ namespace gdc
             {
                 Vector xvalTmp = xval;
                 xvalTmp(i) += eps;
-                Scalar fvalNew = objective(xvalTmp, gradTmp);
+                Scalar fvalNew = (*objective)(xvalTmp, gradTmp);
 
                 gradient(i) = (fvalNew - fval) / eps;
             }
@@ -80,20 +81,19 @@ namespace gdc
     {
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
 
-        Objective objective;
         Scalar eps;
         Index threads;
+        Objective *objective;
 
         BackwardDifferences()
-            : objective(),
-            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon())),
-            threads(0)
+            : BackwardDifferences(
+                std::sqrt(std::numeric_limits<Scalar>::epsilon()))
         {
 
         }
 
         BackwardDifferences(const Scalar eps)
-            : objective(), eps(eps)
+            : eps(eps), threads(0), objective(nullptr)
         {
 
         }
@@ -102,6 +102,8 @@ namespace gdc
             const Scalar fval,
             Vector &gradient)
         {
+            assert(objective != nullptr);
+
             Vector gradTmp;
 
             gradient.resize(xval.size());
@@ -110,7 +112,7 @@ namespace gdc
             {
                 Vector xvalTmp = xval;
                 xvalTmp(i) -= eps;
-                Scalar fvalNew = objective(xvalTmp, gradTmp);
+                Scalar fvalNew = (*objective)(xvalTmp, gradTmp);
 
                 gradient(i) = (fval - fvalNew) / eps;
             }
@@ -130,20 +132,21 @@ namespace gdc
     {
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
 
-        Objective objective;
         Scalar eps;
         Index threads;
+        Objective *objective;
 
         CentralDifferences()
-            : objective(),
-            eps(std::sqrt(std::numeric_limits<Scalar>::epsilon())),
-            threads(0)
+            : CentralDifferences(
+                std::sqrt(std::numeric_limits<Scalar>::epsilon()))
         {
 
         }
 
         CentralDifferences(const Scalar eps)
-            : objective(), eps(eps)
+            : eps(eps),
+            threads(1),
+            objective(nullptr)
         {
 
         }
@@ -152,6 +155,8 @@ namespace gdc
             const Scalar,
             Vector &gradient)
         {
+            assert(objective != nullptr);
+
             Vector gradTmp;
 
             Vector fvals(xval.size() * 2);
@@ -164,7 +169,8 @@ namespace gdc
                     xvalTmp(idx) += eps / 2;
                 else
                     xvalTmp(idx) -= eps / 2;
-                fvals(i) = objective(xvalTmp, gradTmp);
+
+                fvals(i) = (*objective)(xvalTmp, gradTmp);
             }
 
             gradient.resize(xval.size());
@@ -188,8 +194,129 @@ namespace gdc
         }
     };
 
+    template<typename Scalar, typename Objective>
+    struct ConstantStepSize
+    {
+        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+
+        Scalar stepSize;
+        Objective *objective;
+
+        ConstantStepSize()
+            : ConstantStepSize(0.7)
+        {
+
+        }
+
+        ConstantStepSize(const Scalar stepSize)
+            : stepSize(stepSize), objective(nullptr)
+        {
+
+        }
+
+        Scalar operator()(const Vector &,
+            const Scalar,
+            const Vector &)
+        {
+            return stepSize;
+        }
+    };
+
+    template<typename Scalar, typename Objective>
+    struct BarzilaiBorweinStep
+    {
+        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+
+        Vector lastXval;
+        Vector lastGradient;
+        Objective *objective;
+
+        BarzilaiBorweinStep()
+            : lastXval(), lastGradient(), objective(nullptr)
+        {
+
+        }
+
+        Scalar operator()(const Vector &xval,
+            const Scalar,
+            const Vector &gradient)
+        {
+            if(lastXval.size() == 0)
+            {
+                lastXval.setZero(xval.size());
+                lastGradient.setZero(gradient.size());
+            }
+
+            Scalar num = ((xval - lastXval).transpose() * (gradient - lastGradient)) (0);
+            num = std::abs(num);
+            Scalar denom = (gradient - lastGradient).squaredNorm();
+
+            lastGradient = gradient;
+            lastXval = xval;
+            if(denom == 0)
+                return 1;
+            else
+                return num / denom;
+        }
+    };
+
     template<typename Scalar,
         typename Objective,
+        typename FiniteDifferences=CentralDifferences<Scalar, Objective>>
+    struct WolfeLineSearch
+    {
+        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+
+        Scalar c1;
+        Scalar c2;
+        Objective *objective;
+        FiniteDifferences finiteDifferences;
+
+        WolfeLineSearch()
+            : c1(1e-4), c2(0.9), objective(nullptr)
+        {
+
+        }
+
+        Scalar evaluateObjective(const Vector &xval, Vector &gradient)
+        {
+            gradient.resize(0);
+            Scalar fval = (*objective)(xval, gradient);
+            if(gradient.size() == 0)
+                finiteDifferences(xval, fval, gradient);
+            return fval;
+        }
+
+        Scalar operator()(const Vector &xval,
+            const Scalar fval,
+            const Vector &gradient)
+        {
+            assert(objective != nullptr);
+            finiteDifferences.objective = objective;
+            finiteDifferences.threads = 0;
+
+            Scalar stepSize = 1.0;
+
+            Vector gradientTmp;
+            Vector xvalTmp = xval + stepSize * -gradient;
+            Scalar fvalTmp = evaluateObjective(xvalTmp, gradientTmp);
+            Scalar gradientStep = (-gradient.transpose() * gradient)(0);
+
+            while(fvalTmp > fval + c1 * stepSize * gradientStep
+                || (-gradient.transpose() * gradientTmp)(0) > -c2 * gradientStep)
+            {
+                stepSize = stepSize * 0.9;
+                xvalTmp = xval + stepSize * -gradient;
+                fvalTmp = evaluateObjective(xvalTmp, gradientTmp);
+            }
+
+            return stepSize;
+        }
+    };
+
+    template<typename Scalar,
+        typename Objective,
+        typename StepSize=WolfeLineSearch<Scalar, Objective>,
         typename Callback=NoCallback<Scalar>,
         typename FiniteDifferences=CentralDifferences<Scalar, Objective> >
     class GradientDescent
@@ -207,10 +334,10 @@ namespace gdc
     protected:
         Index maxIt_;
         Scalar minGradientLen_;
-        Scalar learningRate_;
         Scalar momentum_;
         bool verbose_;
         Objective objective_;
+        StepSize stepSize_;
         Callback callback_;
         FiniteDifferences finiteDifferences_;
 
@@ -246,9 +373,9 @@ namespace gdc
 
         GradientDescent()
             : maxIt_(0), minGradientLen_(static_cast<Scalar>(1e-6)),
-            learningRate_(static_cast<Scalar>(0.7)),
             momentum_(static_cast<Scalar>(0.9)),
-            verbose_(false), objective_(), callback_(), finiteDifferences_()
+            verbose_(false), objective_(), stepSize_(), callback_(),
+            finiteDifferences_()
         {
 
         }
@@ -271,7 +398,6 @@ namespace gdc
         void setObjective(const Objective &objective)
         {
             objective_ = objective;
-            finiteDifferences_.objective = objective;
         }
 
         void setCallback(const Callback &callback)
@@ -289,9 +415,9 @@ namespace gdc
             minGradientLen_ = gradientLen;
         }
 
-        void setLearningRate(const Scalar learningRate)
+        void setStepSize(const StepSize stepSize)
         {
-            learningRate_ = learningRate;
+            stepSize_ = stepSize;
         }
 
         void setMomentum(const Scalar momentum)
@@ -306,12 +432,16 @@ namespace gdc
 
         Result minimize(const Vector &initialGuess)
         {
+            finiteDifferences_.objective = &objective_;
+            stepSize_.objective = &objective_;
+
             Vector gradient;
             Vector xval = initialGuess;
 
             Scalar fval = evaluateObjective(xval, gradient);
             Scalar gradientLen = gradient.norm();
-            Vector step = learningRate_ * gradient;
+            Scalar stepSize = stepSize_(xval, fval, gradient);
+            Vector step = stepSize * gradient;
 
             Index iterations = 0;
             while((maxIt_ <= 0 || iterations < maxIt_) && gradientLen >= minGradientLen_)
@@ -319,8 +449,9 @@ namespace gdc
                 xval -= step;
                 fval = evaluateObjective(xval, gradient);
                 gradientLen = gradient.norm();
-                // update step according to learnung size and momentum
-                step = learningRate_ * (momentum_ * step + (1 - momentum_) * gradient);
+                // update step according to step size and momentum
+                stepSize = stepSize_(xval, fval, gradient);
+                step = stepSize * (momentum_ * step + (1 - momentum_) * gradient);
 
                 if(verbose_)
                 {
@@ -328,6 +459,7 @@ namespace gdc
                         << std::setw(4) << iterations
                         << std::fixed << std::showpoint << std::setprecision(6)
                         << "    gradlen=" << gradientLen
+                        << "    stepSize=" << stepSize
                         << "    fval=" << fval
                         << "    xval=" << vector2str(xval)
                         << "    gradient=" << vector2str(gradient)
