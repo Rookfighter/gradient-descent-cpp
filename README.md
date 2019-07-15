@@ -62,8 +62,8 @@ int main()
     // Create optimizer object with Paraboloid functor as objective.
     //
     // You can specify a StepSize functor as template parameter.
-    // There are ConstantStepSize, BarzilaiBorweinStep and WolfeLineSearch
-    // available. (Default is WolfeLineSearch)
+    // There are ConstantStepSize, LimitedChangeStep, BarzilaiBorweinStep and
+    // WolfeLineSearch available. (Default is BarzilaiBorweinStep)
     //
     // You can additionally specify a Callback functor as template parameter.
     //
@@ -90,9 +90,9 @@ int main()
     // Set the the parametrized StepSize functor used for the step calculation.
     optimizer.setStepSize(gdc::ConstantStepSize<double, Paraboloid>(0.8));
 
-    // Set the momentum rate used for the step calculation (default is 0.9).
+    // Set the momentum rate used for the step calculation (default is 0.0).
     // Defines how much momentum is kept from previous iterations.
-    optimizer.setMomentum(0.8);
+    optimizer.setMomentum(0.1);
 
     // Turn verbosity on, so the optimizer prints status updates after each
     // iteration.
