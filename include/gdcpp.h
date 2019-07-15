@@ -194,7 +194,6 @@ namespace gdc
         }
     };
 
-    /** Functor that returns a constant step size for gradient descent. */
     template<typename Scalar, typename Objective>
     struct ConstantStepSize
     {
@@ -223,11 +222,6 @@ namespace gdc
         }
     };
 
-    /** Functor to compute the gradient descent step size according to the
-      * barzilai-borwein-method.
-      *
-      * stepSize = abs((x - x_last)^T * (grad - grad_last)) / norm(grad - grad_last)^2
-      */
     template<typename Scalar, typename Objective>
     struct BarzilaiBorweinStep
     {
@@ -266,15 +260,6 @@ namespace gdc
         }
     };
 
-    /** Functor to compute the gradient descent step size by Wolfe line search
-      * in backtracking mode.
-      * In principle, the step size is initialized to 1 and reduced until the
-      * Arimijo and Wolfe condition are satisfied.
-      *
-      *         x_n = x + stepSize * -grad(x)
-      * Armijo: f(x_n) <= f(x) + c1 * stepSize * -grad(x)^T * grad(x)
-      * Wolfe:  -grad(x)^T * grad(x_n) <= -c2 * -grad(x)^T * grad(x)
-      */
     template<typename Scalar,
         typename Objective,
         typename FiniteDifferences=CentralDifferences<Scalar, Objective>>
@@ -349,6 +334,7 @@ namespace gdc
     protected:
         Index maxIt_;
         Scalar minGradientLen_;
+        Scalar minStepLen_;
         Scalar momentum_;
         bool verbose_;
         Objective objective_;
@@ -387,7 +373,8 @@ namespace gdc
     public:
 
         GradientDescent()
-            : maxIt_(0), minGradientLen_(static_cast<Scalar>(1e-6)),
+            : maxIt_(0), minGradientLen_(static_cast<Scalar>(1e-9)),
+            minStepLen_(static_cast<Scalar>(1e-9)),
             momentum_(static_cast<Scalar>(0.9)),
             verbose_(false), objective_(), stepSize_(), callback_(),
             finiteDifferences_()
@@ -430,6 +417,11 @@ namespace gdc
             minGradientLen_ = gradientLen;
         }
 
+        void setMinStepLength(const Scalar stepLen)
+        {
+            minStepLen_ = stepLen;
+        }
+
         void setStepSize(const StepSize stepSize)
         {
             stepSize_ = stepSize;
@@ -457,9 +449,12 @@ namespace gdc
             Scalar gradientLen = gradient.norm();
             Scalar stepSize = stepSize_(xval, fval, gradient);
             Vector step = stepSize * gradient;
+            Scalar stepLen = step.norm();
 
             Index iterations = 0;
-            while((maxIt_ <= 0 || iterations < maxIt_) && gradientLen >= minGradientLen_)
+            while((maxIt_ <= 0 || iterations < maxIt_) &&
+                gradientLen >= minGradientLen_ &&
+                stepLen >= minStepLen_)
             {
                 xval -= step;
                 fval = evaluateObjective(xval, gradient);
@@ -467,6 +462,7 @@ namespace gdc
                 // update step according to step size and momentum
                 stepSize = stepSize_(xval, fval, gradient);
                 step = stepSize * (momentum_ * step + (1 - momentum_) * gradient);
+                stepLen = step.norm();
 
                 if(verbose_)
                 {
@@ -474,7 +470,8 @@ namespace gdc
                         << std::setw(4) << iterations
                         << std::fixed << std::showpoint << std::setprecision(6)
                         << "    gradlen=" << gradientLen
-                        << "    stepSize=" << stepSize
+                        << "    stepsize=" << stepSize
+                        << "    steplen=" << stepLen
                         << "    fval=" << fval
                         << "    xval=" << vector2str(xval)
                         << "    gradient=" << vector2str(gradient)
