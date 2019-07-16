@@ -378,7 +378,7 @@ namespace gdc
         Scalar minGradientLen_;
         Scalar minStepLen_;
         Scalar momentum_;
-        bool verbose_;
+        Index verbosity_;
         Objective objective_;
         StepSize stepSize_;
         Callback callback_;
@@ -417,7 +417,7 @@ namespace gdc
         GradientDescent()
             : maxIt_(0), minGradientLen_(static_cast<Scalar>(1e-9)),
             minStepLen_(static_cast<Scalar>(1e-9)), momentum_(0),
-            verbose_(false), objective_(), stepSize_(), callback_(),
+            verbosity_(0), objective_(), stepSize_(), callback_(),
             finiteDifferences_()
         {
 
@@ -473,9 +473,9 @@ namespace gdc
             momentum_ = momentum;
         }
 
-        void setVerbose(const bool verbose)
+        void setVerbosity(const Index verbosity)
         {
-            verbose_ = verbose;
+            verbosity_ = verbosity;
         }
 
         Result minimize(const Vector &initialGuess)
@@ -505,7 +505,7 @@ namespace gdc
                 step = momentum_ * step + (1 - momentum_) * stepSize * gradient;
                 stepLen = step.norm();
 
-                if(verbose_)
+                if(verbosity_ > 0)
                 {
                     std::stringstream ss;
                     ss << "it=" << std::setfill('0')
@@ -514,12 +514,14 @@ namespace gdc
                         << "    gradlen=" << gradientLen
                         << "    stepsize=" << stepSize
                         << "    steplen=" << stepLen
-                        << "    fval=" << fval
-                        << "    xval=" << vector2str(xval)
-                        << "    gradient=" << vector2str(gradient)
-                        << "    step=" << vector2str(step)
-                        << std::endl;
-                    std::cout << ss.str();
+                        << "    fval=" << fval;
+                    if(verbosity_ > 1)
+                        ss << "    xval=" << vector2str(xval);
+                    if(verbosity_ > 2)
+                        ss << "    gradient=" << vector2str(gradient);
+                    if(verbosity_ > 3)
+                        ss << "    step=" << vector2str(step);
+                    std::cout << ss.str() << std::endl;;
                 }
 
                 if(!callback_(iterations, xval, fval, gradient))
