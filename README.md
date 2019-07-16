@@ -98,7 +98,7 @@ int main()
 
     // Turn verbosity on, so the optimizer prints status updates after each
     // iteration.
-    optimizer.setVerbose(true);
+    optimizer.setVerbosity(4);
 
     // Set initial guess.
     Eigen::VectorXd initialGuess(2);
