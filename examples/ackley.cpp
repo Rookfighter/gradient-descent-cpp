@@ -1,44 +1,3 @@
-# gradient-descent-cpp
-
-![Cpp11](https://img.shields.io/badge/C%2B%2B-11-blue.svg)
-![License](https://img.shields.io/packagist/l/doctrine/orm.svg)
-![Travis Status](https://travis-ci.org/Rookfighter/gradient-descent-cpp.svg?branch=master)
-![Appveyor Status](https://ci.appveyor.com/api/projects/status/66uh2rua4sijj4y9?svg=true)
-
-gradient-descent-cpp is a header-only C++ library for gradient descent
-optimization using the Eigen3 library.
-
-## Install
-
-Simply copy the header file into your project or install it using
-the CMake build system by typing
-
-```bash
-cd path/to/repo
-mkdir build
-cd build
-cmake ..
-make install
-```
-
-The library requires Eigen3 to be installed on your system.
-In Debian based systems you can simply type
-
-```bash
-apt-get install libeigen3-dev
-```
-
-Make sure ```Eigen3``` can be found by your build system.
-
-## Usage
-
-There are three steps to use gradient-descent-cpp:
-
-* Implement your objective function as functor
-* Instantiate the gradient descent optimizer
-* Choose your parameters
-
-```cpp
 #include <gdcpp.h>
 
 struct Ackley
@@ -118,4 +77,3 @@ int main()
 
     return 0;
 }
-```

@@ -489,7 +489,7 @@ namespace gdc
             Scalar fval = evaluateObjective(xval, gradient);
             Scalar gradientLen = gradient.norm();
             Scalar stepSize = stepSize_(xval, fval, gradient);
-            Vector step = stepSize * gradient;
+            Vector step = (1 - momentum_) * stepSize * gradient;
             Scalar stepLen = step.norm();
 
             Index iterations = 0;
