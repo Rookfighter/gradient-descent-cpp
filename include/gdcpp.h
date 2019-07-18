@@ -483,19 +483,20 @@ namespace gdc
             finiteDifferences_.objective = &objective_;
             stepSize_.objective = &objective_;
 
-            Vector gradient;
             Vector xval = initialGuess;
-
-            Scalar fval = evaluateObjective(xval, gradient);
-            Scalar gradientLen = gradient.norm();
-            Scalar stepSize = stepSize_(xval, fval, gradient);
-            Vector step = (1 - momentum_) * stepSize * gradient;
-            Scalar stepLen = step.norm();
+            Vector gradient;
+            Scalar fval;
+            Scalar gradientLen = minGradientLen_ + 1;
+            Scalar stepSize;
+            Vector step = Vector::Zero(xval.size());
+            Scalar stepLen = minStepLen_ + 1;
+            bool callbackResult = true;
 
             Index iterations = 0;
             while((maxIt_ <= 0 || iterations < maxIt_) &&
                 gradientLen >= minGradientLen_ &&
-                stepLen >= minStepLen_)
+                stepLen >= minStepLen_
+                && callbackResult)
             {
                 xval -= step;
                 fval = evaluateObjective(xval, gradient);
@@ -504,6 +505,8 @@ namespace gdc
                 stepSize = stepSize_(xval, fval, gradient);
                 step = momentum_ * step + (1 - momentum_) * stepSize * gradient;
                 stepLen = step.norm();
+                // evaluate callback an save its result
+                callbackResult = callback_(iterations, xval, fval, gradient);
 
                 if(verbosity_ > 0)
                 {
@@ -514,6 +517,7 @@ namespace gdc
                         << "    gradlen=" << gradientLen
                         << "    stepsize=" << stepSize
                         << "    steplen=" << stepLen
+                        << "    callback=" << (callbackResult ? "true" : "false")
                         << "    fval=" << fval;
                     if(verbosity_ > 1)
                         ss << "    xval=" << vector2str(xval);
@@ -521,11 +525,8 @@ namespace gdc
                         ss << "    gradient=" << vector2str(gradient);
                     if(verbosity_ > 3)
                         ss << "    step=" << vector2str(step);
-                    std::cout << ss.str() << std::endl;;
+                    std::cout << ss.str() << std::endl;
                 }
-
-                if(!callback_(iterations, xval, fval, gradient))
-                    break;
 
                 ++iterations;
             }
