@@ -516,9 +516,13 @@ namespace gdc
                         << std::fixed << std::showpoint << std::setprecision(6)
                         << "    gradlen=" << gradientLen
                         << "    stepsize=" << stepSize
-                        << "    steplen=" << stepLen
-                        << "    callback=" << (callbackResult ? "true" : "false")
-                        << "    fval=" << fval;
+                        << "    steplen=" << stepLen;
+
+                    if(verbosity_ > 2)
+                        ss << "    callback=" << (callbackResult ? "true" : "false");
+
+                    ss << "    fval=" << fval;
+
                     if(verbosity_ > 1)
                         ss << "    xval=" << vector2str(xval);
                     if(verbosity_ > 2)
