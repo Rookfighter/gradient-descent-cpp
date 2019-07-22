@@ -475,7 +475,7 @@ namespace gdc
             Vector gradientN;
             Vector xvalN;
             Scalar fvalN;
-            Scalar gradientDot = gradient.dot(gradient);
+            Scalar stepGrad = -gradient.dot(gradient);
             bool armijoCondition = false;
             bool wolfeCondition = false;
 
@@ -488,8 +488,8 @@ namespace gdc
                 xvalN = xval - stepSize * gradient;
                 fvalN = objective_(xvalN, gradientN);
 
-                armijoCondition = fvalN <= fval - c1_ * stepSize * gradientDot;
-                wolfeCondition = gradient.dot(gradientN) <= c2_ * gradientDot;
+                armijoCondition = fvalN <= fval + c1_ * stepSize * stepGrad;
+                wolfeCondition = -gradient.dot(gradientN) >= c2_ * stepGrad;
 
                 ++iterations;
             }
