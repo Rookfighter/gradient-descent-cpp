@@ -480,7 +480,7 @@ namespace gdc
             bool wolfeCondition = false;
 
             Index iterations = 0;
-            while((maxIt_ == 0 || iterations < maxIt_) &&
+            while((maxIt_ <= 0 || iterations < maxIt_) &&
                 stepSize * decrease_ >= minStep_ &&
                 !(armijoCondition && wolfeCondition))
             {
