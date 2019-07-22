@@ -353,7 +353,7 @@ namespace gdc
             Scalar stepSize = 0;
             if(lastXval_.size() == 0)
             {
-                stepSize = gradient.norm() * constStep_;
+                stepSize = (1 / gradient.norm()) * constStep_;
             }
             else
             {
