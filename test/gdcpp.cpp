@@ -46,7 +46,7 @@ TEST_CASE("gradient_descent")
                 Paraboloid<float>,
                 ConstantStepSize<float>,
                 NoCallback<float>,
-                ForwardDifferences<float, Paraboloid<float>>> optimizer;
+                ForwardDifferences<float>> optimizer;
             optimizer.setMaxIterations(100);
 
             Vector xval(2);
@@ -64,7 +64,7 @@ TEST_CASE("gradient_descent")
                 Paraboloid<float>,
                 ConstantStepSize<float>,
                 NoCallback<float>,
-                BackwardDifferences<float, Paraboloid<float>>> optimizer;
+                BackwardDifferences<float>> optimizer;
             optimizer.setMaxIterations(100);
 
             Vector xval(2);
@@ -82,7 +82,7 @@ TEST_CASE("gradient_descent")
                 Paraboloid<float>,
                 ConstantStepSize<float>,
                 NoCallback<float>,
-                CentralDifferences<float, Paraboloid<float>>> optimizer;
+                CentralDifferences<float>> optimizer;
             optimizer.setMaxIterations(100);
 
             Vector xval(2);
