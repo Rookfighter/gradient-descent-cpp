@@ -44,7 +44,7 @@ TEST_CASE("gradient_descent")
         {
             GradientDescent<float,
                 Paraboloid<float>,
-                ConstantStepSize<float, Paraboloid<float>>,
+                ConstantStepSize<float>,
                 NoCallback<float>,
                 ForwardDifferences<float, Paraboloid<float>>> optimizer;
             optimizer.setMaxIterations(100);
@@ -62,7 +62,7 @@ TEST_CASE("gradient_descent")
         {
             GradientDescent<float,
                 Paraboloid<float>,
-                ConstantStepSize<float, Paraboloid<float>>,
+                ConstantStepSize<float>,
                 NoCallback<float>,
                 BackwardDifferences<float, Paraboloid<float>>> optimizer;
             optimizer.setMaxIterations(100);
@@ -80,7 +80,7 @@ TEST_CASE("gradient_descent")
         {
             GradientDescent<float,
                 Paraboloid<float>,
-                ConstantStepSize<float, Paraboloid<float>>,
+                ConstantStepSize<float>,
                 NoCallback<float>,
                 CentralDifferences<float, Paraboloid<float>>> optimizer;
             optimizer.setMaxIterations(100);
@@ -98,7 +98,7 @@ TEST_CASE("gradient_descent")
         {
             GradientDescent<float,
                 Paraboloid<float>,
-                ConstantStepSize<float, Paraboloid<float>>> optimizer;
+                ConstantStepSize<float>> optimizer;
             optimizer.setMaxIterations(100);
 
             Vector xval(2);
@@ -110,28 +110,11 @@ TEST_CASE("gradient_descent")
             REQUIRE_MATRIX_APPROX(xvalExp, result.xval, eps);
         }
 
-        SECTION("limited change step")
+        SECTION("Barzilai-Borwein step")
         {
             GradientDescent<float,
                 Paraboloid<float>,
-                LimitedChangeStep<float, Paraboloid<float>>> optimizer;
-            optimizer.setMaxIterations(100);
-            // optimizer.setVerbose(true);
-
-            Vector xval(2);
-            xval << 2, 2;
-            Vector xvalExp(2);
-            xvalExp << 0, 0;
-
-            auto result = optimizer.minimize(xval);
-            REQUIRE_MATRIX_APPROX(xvalExp, result.xval, eps);
-        }
-
-        SECTION("barzilai borwein step")
-        {
-            GradientDescent<float,
-                Paraboloid<float>,
-                BarzilaiBorweinStep<float, Paraboloid<float>>> optimizer;
+                BarzilaiBorweinStep<float>> optimizer;
             optimizer.setMaxIterations(100);
 
             Vector xval(2);
@@ -143,11 +126,11 @@ TEST_CASE("gradient_descent")
             REQUIRE_MATRIX_APPROX(xvalExp, result.xval, eps);
         }
 
-        SECTION("Wolfe line search")
+        SECTION("Wolfe linesearch")
         {
             GradientDescent<float,
                 Paraboloid<float>,
-                WolfeLineSearch<float, Paraboloid<float>>> optimizer;
+                WolfeBacktracking<float>> optimizer;
             optimizer.setMaxIterations(100);
 
             Vector xval(2);
@@ -163,7 +146,7 @@ TEST_CASE("gradient_descent")
     SECTION("optimize Rosenbrock")
     {
         GradientDescent<float, Rosenbrock<float>,
-            WolfeLineSearch<float, Rosenbrock<float>>> optimizer;
+            WolfeBacktracking<float>> optimizer;
         optimizer.setMaxIterations(3000);
         optimizer.setMomentum(0.9);
         Vector xval(2);
