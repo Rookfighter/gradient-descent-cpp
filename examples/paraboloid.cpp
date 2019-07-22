@@ -21,8 +21,8 @@ int main()
     // Create optimizer object with Paraboloid functor as objective.
     //
     // You can specify a StepSize functor as template parameter.
-    // There are ConstantStepSize, BarzilaiBorweinStep and
-    // WolfeBacktracking available. (Default is BarzilaiBorweinStep)
+    // There are ConstantStepSize, BarzilaiBorwein and
+    // WolfeBacktracking available. (Default is BarzilaiBorwein)
     //
     // You can additionally specify a Callback functor as template parameter.
     //
