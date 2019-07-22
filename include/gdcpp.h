@@ -251,16 +251,66 @@ namespace gdc
     };
 
     template<typename Scalar, typename Objective>
-    struct BarzilaiBorweinStep
+    class BarzilaiBorweinStep
     {
+    public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
 
-        Vector lastXval;
-        Vector lastGradient;
+        enum class Method
+        {
+            Direct,
+            Inverse
+        };
+    private:
+        Vector lastXval_;
+        Vector lastGradient_;
+        Method method_;
+        Scalar constStep_;
+
+        Scalar constantStep() const
+        {
+            return constStep_;
+        }
+
+        Scalar directStep(const Vector &xval,
+            const Vector &gradient) const
+        {
+            auto sk = xval - lastXval_;
+            auto yk = gradient - lastGradient_;
+            Scalar num = sk.squaredNorm();
+            Scalar denom = (sk.transpose() * yk)(0);
+
+            if(denom == 0)
+                return 1;
+            else
+                return num / denom;
+        }
+
+        Scalar inverseStep(const Vector &xval,
+            const Vector &gradient) const
+        {
+            auto sk = xval - lastXval_;
+            auto yk = gradient - lastGradient_;
+            Scalar num = (sk.transpose() * yk)(0);
+            Scalar denom = yk.squaredNorm();
+
+            if(denom == 0)
+                return 1;
+            else
+                return num / denom;
+        }
+    public:
         Objective *objective;
 
         BarzilaiBorweinStep()
-            : lastXval(), lastGradient(), objective(nullptr)
+            : BarzilaiBorweinStep(Method::Direct, 1e-8)
+        {
+
+        }
+
+        BarzilaiBorweinStep(const Method method, const Scalar constStep)
+            : lastXval_(), lastGradient_(), method_(method),
+            constStep_(constStep), objective(nullptr)
         {
 
         }
@@ -269,22 +319,31 @@ namespace gdc
             const Scalar,
             const Vector &gradient)
         {
-            if(lastXval.size() == 0)
+            Scalar stepSize = 0;
+            if(lastXval_.size() == 0)
             {
-                lastXval.setZero(xval.size());
-                lastGradient.setZero(gradient.size());
+                stepSize = constStep_;
+            }
+            else
+            {
+                switch(method_)
+                {
+                case Method::Direct:
+                    stepSize = directStep(xval, gradient);
+                    break;
+                case Method::Inverse:
+                    stepSize = inverseStep(xval, gradient);
+                    break;
+                default:
+                    assert(false);
+                    break;
+                }
             }
 
-            Scalar num = ((xval - lastXval).transpose() * (gradient - lastGradient)) (0);
-            num = std::abs(num);
-            Scalar denom = (gradient - lastGradient).squaredNorm();
+            lastGradient_ = gradient;
+            lastXval_ = xval;
 
-            lastGradient = gradient;
-            lastXval = xval;
-            if(denom == 0)
-                return 1;
-            else
-                return num / denom;
+            return stepSize;
         }
     };
 
@@ -302,7 +361,7 @@ namespace gdc
         FiniteDifferences finiteDifferences;
 
         WolfeLineSearch()
-            : WolfeLineSearch(0.9, 1e-4, 0.9)
+            : WolfeLineSearch(0.8, 1e-4, 0.9)
         {
 
         }
