@@ -25,46 +25,56 @@ namespace gdc
       *
       * The computation requires len(x) evaluations of the objective.
       */
-    template<typename Scalar,
-        typename Objective>
-    struct ForwardDifferences
+    template<typename Scalar>
+    class ForwardDifferences
     {
+    public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-
-        Scalar eps;
-        Index threads;
-        Objective *objective;
-
+        typedef std::function<Scalar(const Vector &)> Objective;
+    private:
+        Scalar eps_;
+        Index threads_;
+        Objective objective_;
+    public:
         ForwardDifferences()
             : ForwardDifferences(
                 std::sqrt(std::numeric_limits<Scalar>::epsilon()))
-        {
-
-        }
+        { }
 
         ForwardDifferences(const Scalar eps)
-            : eps(eps), threads(0), objective(nullptr)
-        {
+            : eps_(eps), threads_(1), objective_()
+        { }
 
+        void setNumericalEpsilon(const Scalar eps)
+        {
+            eps_ = eps;
+        }
+
+        void setThreads(const Index threads)
+        {
+            threads_ = threads;
+        }
+
+        void setObjective(const Objective &objective)
+        {
+            objective_ = objective;
         }
 
         void operator()(const Vector &xval,
             const Scalar fval,
             Vector &gradient)
         {
-            assert(objective != nullptr);
-
-            Vector gradTmp;
+            assert(objective_);
 
             gradient.resize(xval.size());
-            #pragma omp parallel for num_threads(threads)
+            #pragma omp parallel for num_threads(threads_)
             for(Index i = 0; i < xval.size(); ++i)
             {
-                Vector xvalTmp = xval;
-                xvalTmp(i) += eps;
-                Scalar fvalNew = (*objective)(xvalTmp, gradTmp);
+                Vector xvalN = xval;
+                xvalN(i) += eps_;
+                Scalar fvalN = objective_(xvalN);
 
-                gradient(i) = (fvalNew - fval) / eps;
+                gradient(i) = (fvalN - fval) / eps_;
             }
         }
     };
@@ -76,46 +86,55 @@ namespace gdc
       *
       * The computation requires len(x) evaluations of the objective.
       */
-    template<typename Scalar,
-        typename Objective>
-    struct BackwardDifferences
+    template<typename Scalar>
+    class BackwardDifferences
     {
+    public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-
-        Scalar eps;
-        Index threads;
-        Objective *objective;
-
+        typedef std::function<Scalar(const Vector &)> Objective;
+    private:
+        Scalar eps_;
+        Index threads_;
+        Objective objective_;
+    public:
         BackwardDifferences()
             : BackwardDifferences(
                 std::sqrt(std::numeric_limits<Scalar>::epsilon()))
-        {
-
-        }
+        { }
 
         BackwardDifferences(const Scalar eps)
-            : eps(eps), threads(0), objective(nullptr)
-        {
+            : eps_(eps), threads_(1), objective_()
+        { }
 
+        void setNumericalEpsilon(const Scalar eps)
+        {
+            eps_ = eps;
+        }
+
+        void setThreads(const Index threads)
+        {
+            threads_ = threads;
+        }
+
+        void setObjective(const Objective &objective)
+        {
+            objective_ = objective;
         }
 
         void operator()(const Vector &xval,
             const Scalar fval,
             Vector &gradient)
         {
-            assert(objective != nullptr);
-
-            Vector gradTmp;
+            assert(objective_);
 
             gradient.resize(xval.size());
-            #pragma omp parallel for num_threads(threads)
+            #pragma omp parallel for num_threads(threads_)
             for(Index i = 0; i < xval.size(); ++i)
             {
-                Vector xvalTmp = xval;
-                xvalTmp(i) -= eps;
-                Scalar fvalNew = (*objective)(xvalTmp, gradTmp);
-
-                gradient(i) = (fval - fvalNew) / eps;
+                Vector xvalN = xval;
+                xvalN(i) -= eps_;
+                Scalar fvalN = objective_(xvalN);
+                gradient(i) = (fval - fvalN) / eps_;
             }
         }
     };
@@ -127,56 +146,64 @@ namespace gdc
       *
       * The computation requires 2 * len(x) evaluations of the objective.
       */
-    template<typename Scalar,
-        typename Objective>
+    template<typename Scalar>
     struct CentralDifferences
     {
+    public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-
-        Scalar eps;
-        Index threads;
-        Objective *objective;
-
+        typedef std::function<Scalar(const Vector &)> Objective;
+    private:
+        Scalar eps_;
+        Index threads_;
+        Objective objective_;
+    public:
         CentralDifferences()
             : CentralDifferences(
                 std::sqrt(std::numeric_limits<Scalar>::epsilon()))
-        {
-
-        }
+        { }
 
         CentralDifferences(const Scalar eps)
-            : eps(eps),
-            threads(1),
-            objective(nullptr)
-        {
+            : eps_(eps), threads_(1), objective_()
+        { }
 
+        void setNumericalEpsilon(const Scalar eps)
+        {
+            eps_ = eps;
+        }
+
+        void setThreads(const Index threads)
+        {
+            threads_ = threads;
+        }
+
+        void setObjective(const Objective &objective)
+        {
+            objective_ = objective;
         }
 
         void operator()(const Vector &xval,
             const Scalar,
             Vector &gradient)
         {
-            assert(objective != nullptr);
-
-            Vector gradTmp;
+            assert(objective_);
 
             Vector fvals(xval.size() * 2);
-            #pragma omp parallel for num_threads(threads)
+            #pragma omp parallel for num_threads(threads_)
             for(Index i = 0; i < fvals.size(); ++i)
             {
                 Index idx = i / 2;
-                Vector xvalTmp = xval;
+                Vector xvalN = xval;
                 if(i % 2 == 0)
-                    xvalTmp(idx) += eps / 2;
+                    xvalN(idx) += eps_ / 2;
                 else
-                    xvalTmp(idx) -= eps / 2;
+                    xvalN(idx) -= eps_ / 2;
 
-                fvals(i) = (*objective)(xvalTmp, gradTmp);
+                fvals(i) = objective_(xvalN);
             }
 
             gradient.resize(xval.size());
             for(Index i = 0; i < xval.size(); ++i)
-                gradient(i) = (fvals(i * 2) - fvals(i * 2 + 1)) / eps;
+                gradient(i) = (fvals(i * 2) - fvals(i * 2 + 1)) / eps_;
         }
     };
 
@@ -475,7 +502,7 @@ namespace gdc
         typename Objective,
         typename StepSize=BarzilaiBorweinStep<Scalar>,
         typename Callback=NoCallback<Scalar>,
-        typename FiniteDifferences=CentralDifferences<Scalar, Objective> >
+        typename FiniteDifferences=CentralDifferences<Scalar>>
     class GradientDescent
     {
     public:
@@ -545,7 +572,12 @@ namespace gdc
 
         void setThreads(const Index threads)
         {
-            finiteDifferences_.threads = threads;
+            finiteDifferences_.setThreads(threads);
+        }
+
+        void setNumericalEpsilon(const Scalar eps)
+        {
+            finiteDifferences_.setNumericalEpsilon(eps);
         }
 
         void setMaxIterations(const Index iterations)
@@ -561,11 +593,6 @@ namespace gdc
         void setCallback(const Callback &callback)
         {
             callback_ = callback;
-        }
-
-        void setNumericalEpsilon(const Scalar eps)
-        {
-            finiteDifferences_.eps = eps;
         }
 
         void setMinGradientLength(const Scalar gradientLen)
@@ -595,7 +622,9 @@ namespace gdc
 
         Result minimize(const Vector &initialGuess)
         {
-            finiteDifferences_.objective = &objective_;
+            finiteDifferences_.setObjective(
+                [this](const Vector &xval)
+                { Vector tmp; return this->objective_(xval, tmp); });
             stepSize_.setObjective(
                 [this](const Vector &xval, Vector &gradient)
                 { return evaluateObjective(xval, gradient); });
