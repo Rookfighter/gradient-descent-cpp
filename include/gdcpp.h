@@ -12,6 +12,7 @@
 #include <limits>
 #include <iostream>
 #include <iomanip>
+#include <functional>
 
 namespace gdc
 {
@@ -194,13 +195,16 @@ namespace gdc
         }
     };
 
-    template<typename Scalar, typename Objective>
-    struct ConstantStepSize
+    /** Step size functor, which returns a constant step size. */
+    template<typename Scalar>
+    class ConstantStepSize
     {
+    public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-
-        Scalar stepSize;
-        Objective *objective;
+        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
+    private:
+        Scalar stepSize_;
+    public:
 
         ConstantStepSize()
             : ConstantStepSize(0.7)
@@ -209,52 +213,45 @@ namespace gdc
         }
 
         ConstantStepSize(const Scalar stepSize)
-            : stepSize(stepSize), objective(nullptr)
+            : stepSize_(stepSize)
         {
 
         }
+
+        /** Set the step size returned by this functor.
+          * @param stepSize step size returned by functor */
+        void setStepSize(const Scalar stepSize)
+        {
+            stepSize_ = stepSize;
+        }
+
+        void setObjective(const Objective &)
+        { }
 
         Scalar operator()(const Vector &,
             const Scalar,
             const Vector &)
         {
-            return stepSize;
+            return stepSize_;
         }
     };
 
-    template<typename Scalar, typename Objective>
-    struct LimitedChangeStep
-    {
-        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-
-        Scalar changeLimit;
-        Objective *objective;
-
-        LimitedChangeStep()
-            : LimitedChangeStep(0.1)
-        {
-
-        }
-
-        LimitedChangeStep(const Scalar changeLimit)
-            : changeLimit(changeLimit), objective(nullptr)
-        {
-
-        }
-
-        Scalar operator()(const Vector &,
-            const Scalar,
-            const Vector &gradient)
-        {
-            return 1 / gradient.array().abs().maxCoeff();
-        }
-    };
-
-    template<typename Scalar, typename Objective>
+    /** Step size functor to compute Barzilai-Borwein (BB) steps.
+      * The functor can either compute the direct or inverse BB step.
+      * The steps are computed as follows:
+      *
+      * s_k = x_k - x_k-1         k >= 1
+      * y_k = grad_k - grad_k-1   k >= 1
+      * Direct:  stepSize = (s_k^T * s_k) / (y_k^T * s_k)
+      * Inverse: stepSize = (y_k^T * s_k) / (y_k^T * y_k)
+      *
+      * The very first step is computed as a constant. */
+    template<typename Scalar>
     class BarzilaiBorweinStep
     {
     public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
 
         enum class Method
         {
@@ -273,12 +270,12 @@ namespace gdc
         }
 
         Scalar directStep(const Vector &xval,
-            const Vector &gradient) const
+            const Vector &gradient)
         {
             auto sk = xval - lastXval_;
             auto yk = gradient - lastGradient_;
-            Scalar num = sk.squaredNorm();
-            Scalar denom = (sk.transpose() * yk)(0);
+            Scalar num = sk.dot(sk);
+            Scalar denom = sk.dot(yk);
 
             if(denom == 0)
                 return 1;
@@ -287,12 +284,12 @@ namespace gdc
         }
 
         Scalar inverseStep(const Vector &xval,
-            const Vector &gradient) const
+            const Vector &gradient)
         {
             auto sk = xval - lastXval_;
             auto yk = gradient - lastGradient_;
-            Scalar num = (sk.transpose() * yk)(0);
-            Scalar denom = yk.squaredNorm();
+            Scalar num = sk.dot(yk);
+            Scalar denom = yk.dot(yk);
 
             if(denom == 0)
                 return 1;
@@ -300,19 +297,26 @@ namespace gdc
                 return num / denom;
         }
     public:
-        Objective *objective;
-
         BarzilaiBorweinStep()
             : BarzilaiBorweinStep(Method::Direct, 1e-8)
-        {
-
-        }
+        { }
 
         BarzilaiBorweinStep(const Method method, const Scalar constStep)
             : lastXval_(), lastGradient_(), method_(method),
-            constStep_(constStep), objective(nullptr)
-        {
+            constStep_(constStep)
+        { }
 
+        void setObjective(const Objective &)
+        { }
+
+        void setMethod(const Method method)
+        {
+            method_ = method;
+        }
+
+        void setConstStepSize(const Scalar stepSize)
+        {
+            constStep_ = stepSize;
         }
 
         Scalar operator()(const Vector &xval,
@@ -347,68 +351,115 @@ namespace gdc
         }
     };
 
-    template<typename Scalar,
-        typename Objective,
-        typename FiniteDifferences=CentralDifferences<Scalar, Objective>>
-    struct WolfeLineSearch
+    /** Step size functor to perform Wolfe Linesearch with backtracking.
+      * The functor iteratively decreases the step size until the following
+      * conditions are met:
+      *
+      * Armijo: f(x - stepSize * grad(x)) <= f(x) - c1 * stepSize * grad(x)^T * grad(x)
+      * Wolfe: grad(x)^T grad(x - stepSize * grad(x)) <= c2 * grad(x)^T * grad(x)
+      *
+      * If either condition does not hold the step size is decreased:
+      *
+      * stepSize = decrease * stepSize
+      *
+      */
+    template<typename Scalar>
+    class WolfeBacktracking
     {
+    public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
+    private:
+        Scalar decrease_;
+        Scalar c1_;
+        Scalar c2_;
+        Scalar minStep_;
+        Scalar maxStep_;
+        Index maxIt_;
+        Objective objective_;
 
-        Scalar decrease;
-        Scalar c1;
-        Scalar c2;
-        Objective *objective;
-        FiniteDifferences finiteDifferences;
+    public:
+        WolfeBacktracking()
+            : WolfeBacktracking(0.8, 1e-4, 0.9, 1e-10, 1.0, 0)
+        { }
 
-        WolfeLineSearch()
-            : WolfeLineSearch(0.8, 1e-4, 0.9)
+        WolfeBacktracking(const Scalar decrease,
+            const Scalar c1,
+            const Scalar c2,
+            const Scalar minStep,
+            const Scalar maxStep,
+            const Index iterations)
+            : decrease_(decrease), c1_(c1), c2_(c2), minStep_(minStep),
+            maxStep_(maxStep), maxIt_(iterations), objective_()
+        { }
+
+        /** Set the decreasing factor for backtracking.
+          * @param decrease decreasing factor */
+        void setBacktrackingDecrease(const Scalar decrease)
         {
-
+            decrease_ = decrease;
         }
 
-        WolfeLineSearch(const Scalar decrease)
-            : WolfeLineSearch(decrease, 1e-4, 0.9)
+        /** Set the wolfe constants for Armijo and Wolfe condition (see class
+          * description).
+          * @param c1 armijo constant
+          * @param c2 wolfe constant */
+        void setWolfeConstants(const Scalar c1, const Scalar c2)
         {
-
+            c1_ = c1;
+            c2_ = c2;
         }
 
-        WolfeLineSearch(const Scalar decrease, const Scalar c1, const Scalar c2)
-            : decrease(decrease), c1(c1), c2(c2), objective(nullptr),
-            finiteDifferences()
+        /** Set the bounds for the step size during linesearch.
+          * The final step size is guaranteed to be in [minStep, maxStep].
+          * @param minStep minimum step size
+          * @param maxStep maximum step size */
+        void setStepBounds(const Scalar minStep, const Scalar maxStep)
         {
-            finiteDifferences.threads = 0;
+            minStep_ = minStep;
+            maxStep_ = maxStep;
         }
 
-        Scalar evaluateObjective(const Vector &xval, Vector &gradient)
+        /** Set the maximum number of iterations.
+          * Set to 0 or negative for infinite iterations.
+          * @param iterations maximum number of iterations */
+        void setMaxIterations(const Index iterations)
         {
-            gradient.resize(0);
-            Scalar fval = (*objective)(xval, gradient);
-            if(gradient.size() == 0)
-                finiteDifferences(xval, fval, gradient);
-            return fval;
+            maxIt_ = iterations;
+        }
+
+        void setObjective(const Objective &objective)
+        {
+            objective_ = objective;
         }
 
         Scalar operator()(const Vector &xval,
             const Scalar fval,
             const Vector &gradient)
         {
-            assert(objective != nullptr);
-            finiteDifferences.objective = objective;
-            finiteDifferences.threads = 0;
+            assert(objective_);
 
-            Scalar stepSize = 1.0;
+            Scalar stepSize = maxStep_ / decrease_;
+            Vector gradientN;
+            Vector xvalN;
+            Scalar fvalN;
+            Scalar gradientDot = gradient.dot(gradient);
+            bool armijoCondition = false;
+            bool wolfeCondition = false;
 
-            Vector gradientTmp;
-            Vector xvalTmp = xval + stepSize * -gradient;
-            Scalar fvalTmp = evaluateObjective(xvalTmp, gradientTmp);
-            Scalar gradientStep = (-gradient.transpose() * gradient)(0);
-
-            while(fvalTmp > fval + c1 * stepSize * gradientStep
-                || (-gradient.transpose() * gradientTmp)(0) > -c2 * gradientStep)
+            Index iterations = 0;
+            while((maxIt_ == 0 || iterations < maxIt_) &&
+                stepSize > minStep_ &&
+                !(armijoCondition && wolfeCondition))
             {
-                stepSize = decrease * stepSize;
-                xvalTmp = xval + stepSize * -gradient;
-                fvalTmp = evaluateObjective(xvalTmp, gradientTmp);
+                stepSize = decrease_ * stepSize;
+                xvalN = xval - stepSize * gradient;
+                fvalN = objective_(xvalN, gradientN);
+
+                armijoCondition = fvalN <= fval - c1_ * stepSize * gradientDot;
+                wolfeCondition = gradient.dot(gradientN) <= c2_ * gradientDot;
+
+                ++iterations;
             }
 
             return stepSize;
@@ -417,7 +468,7 @@ namespace gdc
 
     template<typename Scalar,
         typename Objective,
-        typename StepSize=BarzilaiBorweinStep<Scalar, Objective>,
+        typename StepSize=BarzilaiBorweinStep<Scalar>,
         typename Callback=NoCallback<Scalar>,
         typename FiniteDifferences=CentralDifferences<Scalar, Objective> >
     class GradientDescent
@@ -540,7 +591,9 @@ namespace gdc
         Result minimize(const Vector &initialGuess)
         {
             finiteDifferences_.objective = &objective_;
-            stepSize_.objective = &objective_;
+            stepSize_.setObjective(
+                [this](const Vector &xval, Vector &gradient)
+                { return evaluateObjective(xval, gradient); });
 
             Vector xval = initialGuess;
             Vector gradient;
