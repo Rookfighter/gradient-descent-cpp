@@ -394,6 +394,7 @@ namespace gdc
         { }
 
         /** Set the decreasing factor for backtracking.
+          * Assure that decrease in (0, 1).
           * @param decrease decreasing factor */
         void setBacktrackingDecrease(const Scalar decrease)
         {
@@ -407,6 +408,8 @@ namespace gdc
           * @param c2 wolfe constant */
         void setWolfeConstants(const Scalar c1, const Scalar c2)
         {
+            assert(c1 < c2);
+            assert(c2 < 1);
             c1_ = c1;
             c2_ = c2;
         }
@@ -417,6 +420,7 @@ namespace gdc
           * @param maxStep maximum step size */
         void setStepBounds(const Scalar minStep, const Scalar maxStep)
         {
+            assert(minStep < maxStep);
             minStep_ = minStep;
             maxStep_ = maxStep;
         }
