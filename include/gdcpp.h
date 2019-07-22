@@ -274,7 +274,7 @@ namespace gdc
       *
       * The very first step is computed as a constant. */
     template<typename Scalar>
-    class BarzilaiBorweinStep
+    class BarzilaiBorwein
     {
     public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
@@ -324,11 +324,11 @@ namespace gdc
                 return num / denom;
         }
     public:
-        BarzilaiBorweinStep()
-            : BarzilaiBorweinStep(Method::Direct, 1e-2)
+        BarzilaiBorwein()
+            : BarzilaiBorwein(Method::Direct, 1e-2)
         { }
 
-        BarzilaiBorweinStep(const Method method, const Scalar constStep)
+        BarzilaiBorwein(const Method method, const Scalar constStep)
             : lastXval_(), lastGradient_(), method_(method),
             constStep_(constStep)
         { }
@@ -500,7 +500,7 @@ namespace gdc
 
     template<typename Scalar,
         typename Objective,
-        typename StepSize=BarzilaiBorweinStep<Scalar>,
+        typename StepSize=BarzilaiBorwein<Scalar>,
         typename Callback=NoCallback<Scalar>,
         typename FiniteDifferences=CentralDifferences<Scalar>>
     class GradientDescent
