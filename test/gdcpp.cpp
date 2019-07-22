@@ -114,7 +114,7 @@ TEST_CASE("gradient_descent")
         {
             GradientDescent<float,
                 Paraboloid<float>,
-                BarzilaiBorweinStep<float>> optimizer;
+                BarzilaiBorwein<float>> optimizer;
             optimizer.setMaxIterations(100);
 
             Vector xval(2);
