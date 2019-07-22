@@ -26,8 +26,8 @@ int main()
     // Create optimizer object with Ackley functor as objective.
     //
     // You can specify a StepSize functor as template parameter.
-    // There are ConstantStepSize, LimitedChangeStep, BarzilaiBorweinStep and
-    // WolfeLineSearch available. (Default is BarzilaiBorweinStep)
+    // There are ConstantStepSize,  BarzilaiBorweinStep and
+    // WolfeBacktracking available. (Default is BarzilaiBorweinStep)
     //
     // You can additionally specify a Callback functor as template parameter.
     //
@@ -35,7 +35,7 @@ int main()
     // parameter. There are Forward-, Backward- and CentralDifferences
     // available. (Default is CentralDifferences)
     gdc::GradientDescent<double, Ackley,
-        gdc::WolfeLineSearch<double, Ackley>> optimizer;
+        gdc::WolfeBacktracking<double>> optimizer;
 
     // Set number of iterations as stop criterion.
     // Set it to 0 or negative for infinite iterations (default is 0).

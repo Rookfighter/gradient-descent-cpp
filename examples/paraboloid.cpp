@@ -21,8 +21,8 @@ int main()
     // Create optimizer object with Paraboloid functor as objective.
     //
     // You can specify a StepSize functor as template parameter.
-    // There are ConstantStepSize, LimitedChangeStep, BarzilaiBorweinStep and
-    // WolfeLineSearch available. (Default is BarzilaiBorweinStep)
+    // There are ConstantStepSize, BarzilaiBorweinStep and
+    // WolfeBacktracking available. (Default is BarzilaiBorweinStep)
     //
     // You can additionally specify a Callback functor as template parameter.
     //
@@ -30,7 +30,7 @@ int main()
     // parameter. There are Forward-, Backward- and CentralDifferences
     // available. (Default is CentralDifferences)
     gdc::GradientDescent<double, Paraboloid,
-        gdc::ConstantStepSize<double, Paraboloid>> optimizer;
+        gdc::ConstantStepSize<double>> optimizer;
 
     // Set number of iterations as stop criterion.
     // Set it to 0 or negative for infinite iterations (default is 0).
@@ -47,7 +47,7 @@ int main()
     optimizer.setMinStepLength(1e-6);
 
     // Set the the parametrized StepSize functor used for the step calculation.
-    optimizer.setStepSize(gdc::ConstantStepSize<double, Paraboloid>(0.8));
+    optimizer.setStepSize(gdc::ConstantStepSize<double>(0.8));
 
     // Set the momentum rate used for the step calculation (default is 0.0).
     // Defines how much momentum is kept from previous iterations.
