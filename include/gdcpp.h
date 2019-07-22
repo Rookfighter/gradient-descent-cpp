@@ -402,6 +402,7 @@ namespace gdc
 
         /** Set the wolfe constants for Armijo and Wolfe condition (see class
           * description).
+          * Assure that c1 < c2 < 1 and c1 in (0, 0.5).
           * @param c1 armijo constant
           * @param c2 wolfe constant */
         void setWolfeConstants(const Scalar c1, const Scalar c2)
@@ -449,7 +450,7 @@ namespace gdc
 
             Index iterations = 0;
             while((maxIt_ == 0 || iterations < maxIt_) &&
-                stepSize > minStep_ &&
+                stepSize * decrease_ >= minStep_ &&
                 !(armijoCondition && wolfeCondition))
             {
                 stepSize = decrease_ * stepSize;
