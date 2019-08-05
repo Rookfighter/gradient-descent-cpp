@@ -6,7 +6,7 @@
 ![Appveyor Status](https://ci.appveyor.com/api/projects/status/66uh2rua4sijj4y9?svg=true)
 
 gradient-descent-cpp is a header-only C++ library for gradient descent
-optimization using the Eigen3 library.
+optimization using the ```Eigen3``` library.
 
 ## Install
 
@@ -21,7 +21,7 @@ cmake ..
 make install
 ```
 
-The library requires Eigen3 to be installed on your system.
+The library requires ```Eigen3``` to be installed on your system.
 In Debian based systems you can simply type
 
 ```bash
@@ -29,6 +29,8 @@ apt-get install libeigen3-dev
 ```
 
 Make sure ```Eigen3``` can be found by your build system.
+
+You can use the CMake Find module in ```cmake/``` to find the installed header.
 
 ## Usage
 
