@@ -1,4 +1,4 @@
-# FindGDCPP.txt
+# FindGDCpp.txt
 #
 #     Author: Fabian Meyer
 # Created On: 05 Aug 2019
@@ -7,10 +7,10 @@
 #   GDCPP_INCLUDE_DIR
 #   GDCPP_FOUND
 
-find_path(GDCPP_INCLUDE_DIR
+find_path(GDCPP_INCLUDE_DIR "gdcpp.h"
     HINTS
-    ${GDCPP_ROOT}
-    ENV GDCPP_ROOT
+    "${GDCPP_ROOT}/include"
+    "$ENV{GDCPP_ROOT}/include"
 )
 
 include(FindPackageHandleStandardArgs)
