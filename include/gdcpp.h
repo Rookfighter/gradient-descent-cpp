@@ -382,147 +382,11 @@ namespace gdc
         }
     };
 
-    /** Step size functor to perform Wolfe Linesearch with backtracking.
-      * The functor iteratively decreases the step size until the following
-      * conditions are met:
-      *
-      * Armijo: f(x - stepSize * grad(x)) <= f(x) - c1 * stepSize * grad(x)^T * grad(x)
-      * Wolfe: grad(x)^T grad(x - stepSize * grad(x)) <= c2 * grad(x)^T * grad(x)
-      *
-      * If either condition does not hold the step size is decreased:
-      *
-      * stepSize = decrease * stepSize
-      *
-      */
-    template<typename Scalar>
-    class WolfeBacktracking
-    {
-    public:
-        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
-        typedef std::function<void(const Vector &, const Scalar, Vector &)> FiniteDifferences;
-    private:
-        Scalar decrease_;
-        Scalar c1_;
-        Scalar c2_;
-        Scalar minStep_;
-        Scalar maxStep_;
-        Index maxIt_;
-        Objective objective_;
-        FiniteDifferences finiteDifferences_;
-
-        Scalar evaluateObjective(const Vector &xval, Vector &gradient)
-        {
-            gradient.resize(0);
-            Scalar fval = objective_(xval, gradient);
-            if(gradient.size() == 0)
-                finiteDifferences_(xval, fval, gradient);
-            return fval;
-        }
-    public:
-        WolfeBacktracking()
-            : WolfeBacktracking(0.8, 1e-4, 0.9, 1e-12, 1.0, 0)
-        { }
-
-        WolfeBacktracking(const Scalar decrease,
-            const Scalar c1,
-            const Scalar c2,
-            const Scalar minStep,
-            const Scalar maxStep,
-            const Index iterations)
-            : decrease_(decrease), c1_(c1), c2_(c2), minStep_(minStep),
-            maxStep_(maxStep), maxIt_(iterations), objective_()
-        { }
-
-        /** Set the decreasing factor for backtracking.
-          * Assure that decrease in (0, 1).
-          * @param decrease decreasing factor */
-        void setBacktrackingDecrease(const Scalar decrease)
-        {
-            decrease_ = decrease;
-        }
-
-        /** Set the wolfe constants for Armijo and Wolfe condition (see class
-          * description).
-          * Assure that c1 < c2 < 1 and c1 in (0, 0.5).
-          * @param c1 armijo constant
-          * @param c2 wolfe constant */
-        void setWolfeConstants(const Scalar c1, const Scalar c2)
-        {
-            assert(c1 < c2);
-            assert(c2 < 1);
-            c1_ = c1;
-            c2_ = c2;
-        }
-
-        /** Set the bounds for the step size during linesearch.
-          * The final step size is guaranteed to be in [minStep, maxStep].
-          * @param minStep minimum step size
-          * @param maxStep maximum step size */
-        void setStepBounds(const Scalar minStep, const Scalar maxStep)
-        {
-            assert(minStep < maxStep);
-            minStep_ = minStep;
-            maxStep_ = maxStep;
-        }
-
-        /** Set the maximum number of iterations.
-          * Set to 0 or negative for infinite iterations.
-          * @param iterations maximum number of iterations */
-        void setMaxIterations(const Index iterations)
-        {
-            maxIt_ = iterations;
-        }
-
-        void setObjective(const Objective &objective)
-        {
-            objective_ = objective;
-        }
-
-        void setFiniteDifferences(const FiniteDifferences &finiteDifferences)
-        {
-            finiteDifferences_ = finiteDifferences;
-        }
-
-        Scalar operator()(const Vector &xval,
-            const Scalar fval,
-            const Vector &gradient)
-        {
-            assert(objective_);
-            assert(finiteDifferences_);
-
-            Scalar stepSize = maxStep_ / decrease_;
-            Vector gradientN;
-            Vector xvalN;
-            Scalar fvalN;
-            Scalar stepGrad = -gradient.dot(gradient);
-            bool armijoCondition = false;
-            bool wolfeCondition = false;
-
-            Index iterations = 0;
-            while((maxIt_ <= 0 || iterations < maxIt_) &&
-                stepSize * decrease_ >= minStep_ &&
-                !(armijoCondition && wolfeCondition))
-            {
-                stepSize = decrease_ * stepSize;
-                xvalN = xval - stepSize * gradient;
-                fvalN = evaluateObjective(xvalN, gradientN);
-
-                armijoCondition = fvalN <= fval + c1_ * stepSize * stepGrad;
-                wolfeCondition = -gradient.dot(gradientN) >= c2_ * stepGrad;
-
-                ++iterations;
-            }
-
-            return stepSize;
-        }
-    };
-
     /** Step size functor to perform Armijo Linesearch with backtracking.
       * The functor iteratively decreases the step size until the following
       * conditions are met:
       *
-      * Armijo: f(x - stepSize * grad(x)) <= f(x) - c1 * stepSize * grad(x)^T * grad(x)
+      * Armijo: f(x - stepSize * grad(x)) <= f(x) - cArmijo * stepSize * grad(x)^T * grad(x)
       *
       * If either condition does not hold the step size is decreased:
       *
@@ -534,9 +398,9 @@ namespace gdc
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
         typedef std::function<Scalar(const Vector &, Vector &)> Objective;
         typedef std::function<void(const Vector &, const Scalar, Vector &)> FiniteDifferences;
-    private:
+    protected:
         Scalar decrease_;
-        Scalar relaxation_;
+        Scalar cArmijo_;
         Scalar minStep_;
         Scalar maxStep_;
         Index maxIt_;
@@ -551,37 +415,54 @@ namespace gdc
                 finiteDifferences_(xval, fval, gradient);
             return fval;
         }
+
+        virtual bool computeSecondCondition(const Scalar,
+            const Scalar,
+            const Scalar,
+            const Vector &,
+            const Vector &)
+        {
+            return true;
+        }
     public:
         ArmijoBacktracking()
             : ArmijoBacktracking(0.8, 1e-4, 1e-12, 1.0, 0)
         { }
 
         ArmijoBacktracking(const Scalar decrease,
-            const Scalar relaxation,
+            const Scalar cArmijo,
             const Scalar minStep,
             const Scalar maxStep,
             const Index iterations)
-            : decrease_(decrease), relaxation_(relaxation), minStep_(minStep),
+            : decrease_(decrease), cArmijo_(cArmijo), minStep_(minStep),
             maxStep_(maxStep), maxIt_(iterations), objective_()
-        { }
+        {
+            assert(decrease > 0);
+            assert(decrease < 1);
+            assert(cArmijo > 0);
+            assert(cArmijo < 0.5);
+            assert(minStep < maxStep);
+        }
 
         /** Set the decreasing factor for backtracking.
           * Assure that decrease in (0, 1).
           * @param decrease decreasing factor */
         void setBacktrackingDecrease(const Scalar decrease)
         {
+            assert(decrease > 0);
+            assert(decrease < 1);
             decrease_ = decrease;
         }
 
         /** Set the relaxation constant for the Armijo condition (see class
           * description).
-          * Assure relaxation in (0, 0.5).
-          * @param relaxation armijo constant */
-        void setRelaxationConstant(const Scalar relaxation)
+          * Assure cArmijo in (0, 0.5).
+          * @param cArmijo armijo constant */
+        void setArmijoConstant(const Scalar cArmijo)
         {
-            assert(relaxation > 0);
-            assert(relaxation < 0.5);
-            relaxation_ = relaxation;
+            assert(cArmijo > 0);
+            assert(cArmijo < 0.5);
+            cArmijo_ = cArmijo;
         }
 
         /** Set the bounds for the step size during linesearch.
@@ -624,24 +505,83 @@ namespace gdc
             Vector gradientN;
             Vector xvalN;
             Scalar fvalN;
-            Scalar stepGrad = -gradient.dot(gradient);
             bool armijoCondition = false;
+            bool secondCondition = false;
 
             Index iterations = 0;
             while((maxIt_ <= 0 || iterations < maxIt_) &&
                 stepSize * decrease_ >= minStep_ &&
-                !armijoCondition)
+                !(armijoCondition && secondCondition))
             {
                 stepSize = decrease_ * stepSize;
                 xvalN = xval - stepSize * gradient;
                 fvalN = evaluateObjective(xvalN, gradientN);
 
-                armijoCondition = fvalN <= fval + relaxation_ * stepSize * stepGrad;
+                armijoCondition = fvalN <= fval - cArmijo_ * stepSize * gradient.dot(gradient);
+                secondCondition = computeSecondCondition(stepSize, fval, fvalN, gradient, gradientN);
 
                 ++iterations;
             }
 
             return stepSize;
+        }
+    };
+
+    /** Step size functor to perform Wolfe Linesearch with backtracking.
+      * The functor iteratively decreases the step size until the following
+      * conditions are met:
+      *
+      * Armijo: f(x - stepSize * grad(x)) <= f(x) - cArmijo * stepSize * grad(x)^T * grad(x)
+      * Wolfe: grad(x)^T grad(x - stepSize * grad(x)) <= cWolfe * grad(x)^T * grad(x)
+      *
+      * If either condition does not hold the step size is decreased:
+      *
+      * stepSize = decrease * stepSize */
+    template<typename Scalar>
+    class WolfeBacktracking : public ArmijoBacktracking<Scalar>
+    {
+    public:
+        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
+        typedef std::function<void(const Vector &, const Scalar, Vector &)> FiniteDifferences;
+    protected:
+        Scalar cWolfe_;
+
+        virtual bool computeSecondCondition(const Scalar,
+            const Scalar ,
+            const Scalar ,
+            const Vector &gradient,
+            const Vector &gradientN)
+        {
+            return gradient.dot(gradientN) <= cWolfe_ * gradient.dot(gradient);
+        }
+    public:
+        WolfeBacktracking()
+            : WolfeBacktracking(0.8, 1e-4, 0.9, 1e-12, 1.0, 0)
+        { }
+
+        WolfeBacktracking(const Scalar decrease,
+            const Scalar cArmijo,
+            const Scalar cWolfe,
+            const Scalar minStep,
+            const Scalar maxStep,
+            const Index iterations)
+            : ArmijoBacktracking<Scalar>(decrease, cArmijo, minStep, maxStep,
+                iterations),cWolfe_(cWolfe)
+        {
+            assert(cWolfe < 1);
+            assert(cArmijo < cWolfe);
+        }
+
+        /** Set the wolfe constants for Armijo and Wolfe condition (see class
+          * description).
+          * Assure that c1 < c2 < 1 and c1 in (0, 0.5).
+          * @param c1 armijo constant
+          * @param c2 wolfe constant */
+        void setWolfeConstant(const Scalar cWolfe)
+        {
+            assert(cWolfe < 1);
+            cWolfe_ = cWolfe;
         }
     };
 
