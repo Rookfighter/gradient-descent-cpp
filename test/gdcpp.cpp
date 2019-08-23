@@ -141,6 +141,22 @@ TEST_CASE("gradient_descent")
             auto result = optimizer.minimize(xval);
             REQUIRE_MATRIX_APPROX(xvalExp, result.xval, eps);
         }
+
+        SECTION("Decrease linesearch")
+        {
+            GradientDescent<float,
+                Paraboloid<float>,
+                DecreaseBacktracking<float>> optimizer;
+            optimizer.setMaxIterations(100);
+
+            Vector xval(2);
+            xval << 2, 2;
+            Vector xvalExp(2);
+            xvalExp << 0, 0;
+
+            auto result = optimizer.minimize(xval);
+            REQUIRE_MATRIX_APPROX(xvalExp, result.xval, eps);
+        }
     }
 
     SECTION("optimize Rosenbrock")

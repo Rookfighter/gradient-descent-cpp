@@ -228,7 +228,7 @@ namespace gdc
     {
     public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
+        typedef std::function<Scalar(const Vector &, Vector &, const bool)> Objective;
     private:
         Scalar stepSize_;
     public:
@@ -278,7 +278,7 @@ namespace gdc
     {
     public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
+        typedef std::function<Scalar(const Vector &, Vector &, const bool)> Objective;
 
         enum class Method
         {
@@ -395,7 +395,7 @@ namespace gdc
     {
     public:
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-        typedef std::function<Scalar(const Vector &, Vector &)> Objective;
+        typedef std::function<Scalar(const Vector &, Vector &, const bool)> Objective;
     private:
         Scalar decrease_;
         Scalar c1_;
@@ -407,7 +407,7 @@ namespace gdc
 
     public:
         WolfeBacktracking()
-            : WolfeBacktracking(0.8, 1e-4, 0.9, 1e-10, 1.0, 0)
+            : WolfeBacktracking(0.8, 1e-4, 0.9, 1e-16, 1.0, 0)
         { }
 
         WolfeBacktracking(const Scalar decrease,
@@ -486,10 +486,107 @@ namespace gdc
             {
                 stepSize = decrease_ * stepSize;
                 xvalN = xval - stepSize * gradient;
-                fvalN = objective_(xvalN, gradientN);
+                fvalN = objective_(xvalN, gradientN, true);
 
                 armijoCondition = fvalN <= fval + c1_ * stepSize * stepGrad;
                 wolfeCondition = -gradient.dot(gradientN) >= c2_ * stepGrad;
+
+                ++iterations;
+            }
+
+            return stepSize;
+        }
+    };
+
+    /** Step size functor which searches for a step that reduces the function
+      * value.
+      * The functor iteratively decreases the step size until the following
+      * conditions are met:
+      *
+      * f(x + stepSize * step) < f(x)
+      *
+      * This functor does not require to compute any gradients.
+      */
+    template<typename Scalar>
+    class DecreaseBacktracking
+    {
+    public:
+        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+        typedef std::function<Scalar(const Vector &, Vector &, const bool)> Objective;
+    private:
+        Scalar decrease_;
+        Scalar minStep_;
+        Scalar maxStep_;
+        Index maxIt_;
+        Objective objective_;
+
+    public:
+        DecreaseBacktracking()
+            : DecreaseBacktracking(0.8, 1e-16, 1.0, 0)
+        { }
+
+        DecreaseBacktracking(const Scalar decrease,
+            const Scalar minStep,
+            const Scalar maxStep,
+            const Index iterations)
+            : decrease_(decrease), minStep_(minStep),
+            maxStep_(maxStep), maxIt_(iterations), objective_()
+        { }
+
+        /** Set the decreasing factor for backtracking.
+          * Assure that decrease in (0, 1).
+          * @param decrease decreasing factor */
+        void setBacktrackingDecrease(const Scalar decrease)
+        {
+            decrease_ = decrease;
+        }
+
+        /** Set the bounds for the step size during linesearch.
+          * The final step size is guaranteed to be in [minStep, maxStep].
+          * @param minStep minimum step size
+          * @param maxStep maximum step size */
+        void setStepBounds(const Scalar minStep, const Scalar maxStep)
+        {
+            assert(minStep < maxStep);
+            minStep_ = minStep;
+            maxStep_ = maxStep;
+        }
+
+        /** Set the maximum number of iterations.
+          * Set to 0 or negative for infinite iterations.
+          * @param iterations maximum number of iterations */
+        void setMaxIterations(const Index iterations)
+        {
+            maxIt_ = iterations;
+        }
+
+        void setObjective(const Objective &objective)
+        {
+            objective_ = objective;
+        }
+
+        Scalar operator()(const Vector &xval,
+            const Scalar fval,
+            const Vector &gradient)
+        {
+            assert(objective_);
+
+            Scalar stepSize = maxStep_ / decrease_;
+            Vector xvalN;
+            Vector gradientN;
+            Scalar fvalN;
+            bool improvement = false;
+
+            Index iterations = 0;
+            while((maxIt_ <= 0 || iterations < maxIt_) &&
+                stepSize * decrease_ >= minStep_ &&
+                !improvement)
+            {
+                stepSize = decrease_ * stepSize;
+                xvalN = xval - stepSize * gradient;
+                fvalN = objective_(xvalN, gradientN, false);
+
+                improvement = fvalN < fval;
 
                 ++iterations;
             }
@@ -626,8 +723,11 @@ namespace gdc
                 [this](const Vector &xval)
                 { Vector tmp; return this->objective_(xval, tmp); });
             stepSize_.setObjective(
-                [this](const Vector &xval, Vector &gradient)
-                { return evaluateObjective(xval, gradient); });
+                [this](const Vector &xval, Vector &gradient, const bool finiteDiff)
+                { if(finiteDiff)
+                    return evaluateObjective(xval, gradient);
+                else
+                    return this->objective_(xval, gradient);});
 
             Vector xval = initialGuess;
             Vector gradient;
