@@ -308,7 +308,7 @@ namespace gdc
             if(denom == 0)
                 return 1;
             else
-                return num / denom;
+                return std::abs(num / denom);
         }
 
         Scalar inverseStep(const Vector &xval,
@@ -322,7 +322,7 @@ namespace gdc
             if(denom == 0)
                 return 1;
             else
-                return num / denom;
+                return std::abs(num / denom);
         }
     public:
         BarzilaiBorwein()
