@@ -326,7 +326,7 @@ namespace gdc
         }
     public:
         BarzilaiBorwein()
-            : BarzilaiBorwein(Method::Direct, 1e-2)
+            : BarzilaiBorwein(Method::Direct, 1e-4)
         { }
 
         BarzilaiBorwein(const Method method, const Scalar constStep)
@@ -357,7 +357,7 @@ namespace gdc
             Scalar stepSize = 0;
             if(lastXval_.size() == 0)
             {
-                stepSize = (1 / gradient.norm()) * constStep_;
+                stepSize = constStep_;
             }
             else
             {
